@@ -9,8 +9,8 @@ import org.springframework.web.servlet.DispatcherServlet;
 public class Test {
 
 	@Bean
-	public DispacherServlet dispacherServlet(){
-		DispacherServlet dispacherServlet = new DispacherServlet();
+	public DispatcherServlet dispacherServlet(){
+		DispatcherServlet dispacherServlet = new DispatcherServlet();
 		return dispacherServlet;
 	}
 
