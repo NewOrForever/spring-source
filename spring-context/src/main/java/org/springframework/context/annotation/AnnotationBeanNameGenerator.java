@@ -86,6 +86,8 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 			}
 		}
 		// Fallback: generate a unique default bean name.
+		// beanclassname的shortname
+		// "FooBah" becomes "fooBah" and "X" becomes "x", but "URL" stays as "URL", "URt" -> "URt"
 		return buildDefaultBeanName(definition, registry);
 	}
 
@@ -106,6 +108,7 @@ public class AnnotationBeanNameGenerator implements BeanNameGenerator {
 					Set<String> result = amd.getMetaAnnotationTypes(key);
 					return (result.isEmpty() ? Collections.emptySet() : result);
 				});
+				// 是否@Component注解
 				if (isStereotypeWithNameValue(type, metaTypes, attributes)) {
 					Object value = attributes.get("value");
 					if (value instanceof String) {

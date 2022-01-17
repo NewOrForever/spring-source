@@ -180,6 +180,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 	@Override
 	public void destroy() {
 		if (!CollectionUtils.isEmpty(this.beanPostProcessors)) {
+			// 这种方式是可以执行多个@PreDestroy注解的方法的
 			for (DestructionAwareBeanPostProcessor processor : this.beanPostProcessors) {
 				processor.postProcessBeforeDestruction(this.bean, this.beanName);
 			}
@@ -348,6 +349,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 		String destroyMethodName = beanDefinition.resolvedDestroyMethodName;
 		if (destroyMethodName == null) {
 			destroyMethodName = beanDefinition.getDestroyMethodName(); //
+			// destroyMethodName等于(inferred)或者destroyMethodName为空但bean实现autocloseable接口
 			if (AbstractBeanDefinition.INFER_METHOD.equals(destroyMethodName) ||
 					(destroyMethodName == null && bean instanceof AutoCloseable)) {
 				// Only perform destroy method inference or Closeable detection
@@ -355,10 +357,14 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				destroyMethodName = null;
 				if (!(bean instanceof DisposableBean)) {
 					try {
+						// bean不实现DisposableBean，bean有close方法
+						// 那这里就可以解锁一种设置销毁方法的方式：merged拓展点设置destroyMethodName="(inferred)", 然后bean写个名为close的方法
+						// 没找到close方法则抛错去找下个方法
 						destroyMethodName = bean.getClass().getMethod(CLOSE_METHOD_NAME).getName();
 					}
 					catch (NoSuchMethodException ex) {
 						try {
+							// 找名为shutdown的方法
 							destroyMethodName = bean.getClass().getMethod(SHUTDOWN_METHOD_NAME).getName();
 						}
 						catch (NoSuchMethodException ex2) {

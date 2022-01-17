@@ -206,6 +206,9 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	 * @param name the user-specified name
 	 * @return the transformed name
 	 */
+	// 别名中解析到beanName，UserService这个bean可以有多个别名，但在程序中真正用的时候都会先解析成userService
+	// {userservice1, userService}、{userservice2, userservice} ---> userservice
+	// {userservice1, userService2}、{userservice2, userservice}  ---> 需要循环得到userservice
 	public String canonicalName(String name) {
 		String canonicalName = name;
 		// Handle aliasing...

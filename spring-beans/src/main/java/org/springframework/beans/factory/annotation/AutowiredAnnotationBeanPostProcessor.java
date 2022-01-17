@@ -244,6 +244,8 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+		// 返回的metadata与缓存中存的指向同一内存地址，当该metadata属性值变了那么缓存map中存的metadata属性值也就变了
+		// checkedElement赋值，缓存中的metadata的该属性也就赋值了，java的一些基本概念吧
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
@@ -430,6 +432,8 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
 		// 找注入点（所有被@Autowired注解了的Field或Method）
+		// metaData.injectElements存的是抽象类InjectElement（子类：AutowiredFieldElement、AutowiredMethodElement）
+		// 最后注入时执行的时两个子类的注入方法
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
 		try {
 			metadata.inject(bean, beanName, pvs);
@@ -488,7 +492,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 						metadata.clear(pvs);
 					}
 					// 解析注入点并缓存
+					// 每个注入点都会new一个对象存入InjectionMetadata.InjectedElement
 					metadata = buildAutowiringMetadata(clazz);
+					// 每个bean都会对应的缓存属于自己的metadata
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
 			}
@@ -503,6 +509,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 		}
 
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
+		// clazz ---> targetClass
 		Class<?> targetClass = clazz;
 
 		do {
@@ -522,6 +529,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					}
 
 					// 构造注入点
+					// 获取注解的require属性值
 					boolean required = determineRequiredStatus(ann);
 					currElements.add(new AutowiredFieldElement(field, required));
 				}
@@ -530,6 +538,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 			// 遍历targetClass中的所有Method
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 
+				// 过滤桥接方法
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
 					return;
@@ -681,6 +690,8 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 				// 对于原型Bean，第一次创建的时候，也找注入点，然后进行注入，此时cached为false，注入完了之后cached为true
 				// 第二次创建的时候，先找注入点（此时会拿到缓存好的注入点），也就是AutowiredFieldElement对象，此时cache为true，也就进到此处了
 				// 注入点内并没有缓存被注入的具体Bean对象，而是beanName，这样就能保证注入到不同的原型Bean对象
+				// cachedFieldValue缓存的是ShortcutDependencyDescriptor
+				// doResolveDependency的时候如果有缓存了，执行ShortcutDependencyDescriptor
 				try {
 					value = resolvedCachedArgument(beanName, this.cachedFieldValue);
 				}
@@ -694,7 +705,10 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 				value = resolveFieldValue(field, bean, beanName);
 			}
 
-			// 反射给filed赋值
+			// 反射给bean的filed赋值
+			// postProcessProperties这个拓展点是会个bean属性赋值的，merge这个点就是收集pvs不给bean赋值
+			// 但是最终属性赋值还需要看applyPropertyValues方法，merged扩展点的手动设置的pv是会覆盖这里赋的值的
+			// 方法@Autowired注入有个skip方法是会跳过pvs有的属性的，但是field没写这个方法（很奇怪），所以不跳过在这里会赋值但是最后会被pvs覆盖
 			if (value != null) {
 				ReflectionUtils.makeAccessible(field);
 				field.set(bean, value);
@@ -707,6 +721,9 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 			DependencyDescriptor desc = new DependencyDescriptor(field, this.required);
 			desc.setContainingClass(bean.getClass());
 
+			// 当前bean所依赖的bean的beanName（如UserService依赖OrderService，OrderService的beanName就是autowiredBeanNames）
+			// 根据类型找出多个bean -> autowirecandidate属性判断 -> 泛型检查 -> qualifier注解接茬 -> @Primary筛选 -> @Priority -> 字段参数名或方法参数名
+			// 这么些步骤来筛选bean
 			Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
 			Assert.state(beanFactory != null, "No BeanFactory available");
 			TypeConverter typeConverter = beanFactory.getTypeConverter();
@@ -728,7 +745,10 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 							String autowiredBeanName = autowiredBeanNames.iterator().next();
 							if (beanFactory.containsBean(autowiredBeanName) &&
 									beanFactory.isTypeMatch(autowiredBeanName, field.getType())) {
-								// 构造一个ShortcutDependencyDescriptor作为缓存，保存了当前filed所匹配的autowiredBeanName，而不是对应的bean对象（考虑原型bean）
+								// 构造一个ShortcutDependencyDescriptor作为缓存，保存了当前field所匹配的autowiredBeanName，而不是对应的bean对象（考虑原型bean）
+								// 缓存beanName而不是对应bean对象考虑到的是原型bean（注入点类型是原型bean）
+								// doResolveDependency的时候会先去resolveShortCut
+								// 测试：UserService原型bean，其依赖的OrderService也是原型bean
 								cachedFieldValue = new ShortcutDependencyDescriptor(
 										desc, autowiredBeanName, field.getType());
 							}
@@ -867,7 +887,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	 */
 	@SuppressWarnings("serial")
 	private static class ShortcutDependencyDescriptor extends DependencyDescriptor {
-
+		// 缓存的依赖的beanName
 		private final String shortcut;
 
 		private final Class<?> requiredType;

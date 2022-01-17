@@ -86,16 +86,19 @@ public final class CandidateComponentsIndexLoader {
 		if (classLoaderToUse == null) {
 			classLoaderToUse = CandidateComponentsIndexLoader.class.getClassLoader();
 		}
+		// 执行doLoadIndex加载spring.components，注解类型名对多个bean
 		return cache.computeIfAbsent(classLoaderToUse, CandidateComponentsIndexLoader::doLoadIndex);
 	}
 
 	@Nullable
 	private static CandidateComponentsIndex doLoadIndex(ClassLoader classLoader) {
+		// 配置spring.index.ignore
 		if (shouldIgnoreIndex) {
 			return null;
 		}
 
 		try {
+			// META-INF/spring.components
 			Enumeration<URL> urls = classLoader.getResources(COMPONENTS_RESOURCE_LOCATION);
 			if (!urls.hasMoreElements()) {
 				return null;

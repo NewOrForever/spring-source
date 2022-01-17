@@ -109,6 +109,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	@Nullable
 	private MetadataReaderFactory metadataReaderFactory;
 
+	// 初始化的时候会去加载spring.components
 	@Nullable
 	private CandidateComponentsIndex componentsIndex;
 
@@ -143,9 +144,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	public ClassPathScanningCandidateComponentProvider(boolean useDefaultFilters, Environment environment) {
 		if (useDefaultFilters) {
+			// 注册@Component到默认的includeFilters
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
+		// 在这里加载spring.components
 		setResourceLoader(null);
 	}
 
@@ -316,6 +319,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			return addCandidateComponentsFromIndex(this.componentsIndex, basePackage);
 		}
 		else {
+			// 扫描
 			return scanCandidateComponents(basePackage);
 		}
 	}
@@ -420,7 +424,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
-			// 获取basePackage下所有的文件资源
+			// 获取basePackage下所有的文件资源（class文件）
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
@@ -432,12 +436,15 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 				}
 				if (resource.isReadable()) {
 					try {
+						// 元数据读取器，通过asm技术去扫描资源文件
 						MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
 						// excludeFilters、includeFilters判断
 						if (isCandidateComponent(metadataReader)) { // @Component-->includeFilters判断
+							// beandefinition
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
 
+							// 验证beandefinition是否符合条件
 							if (isCandidateComponent(sbd)) {
 								if (debugEnabled) {
 									logger.debug("Identified candidate component class: " + resource);
@@ -533,6 +540,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	protected boolean isCandidateComponent(AnnotatedBeanDefinition beanDefinition) {
 		AnnotationMetadata metadata = beanDefinition.getMetadata();
+		// 顶层类或者静态内部类 && （不是抽象类也不是接口 || （是抽象类 && 有@Lookup注解的方法））
 		return (metadata.isIndependent() && (metadata.isConcrete() ||
 				(metadata.isAbstract() && metadata.hasAnnotatedMethods(Lookup.class.getName()))));
 	}

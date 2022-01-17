@@ -269,14 +269,20 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
 		for (String basePackage : basePackages) {
 
+			// 找符合条件的component
+			// 有spring.components则扫描这个文件
+			// 没有则去扫描basepackage
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 
 			for (BeanDefinition candidate : candidates) {
+				// scope注解
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());
 
+				// 生成beanname：component值有否则默认简单类型名userService
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 
+				// ScannedGenericBeanDefinition
 				if (candidate instanceof AbstractBeanDefinition) {
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}

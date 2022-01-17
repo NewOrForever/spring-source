@@ -66,6 +66,22 @@ public class GenericTypeAwareAutowireCandidateResolver extends SimpleAutowireCan
 			// If explicitly false, do not proceed with any other checks...
 			return false;
 		}
+		// 泛型检查
+		/**
+		 * 举例
+		 *  class BaseService<O,S>{
+		 * 	@Autowired
+		 * 	private O o;
+		 * 	@Autowired
+		 * 	private S s;
+		 *  }
+		 *
+		 *  public class UserService extends BaseService<OrderService, StockService>
+		 *      {
+		 *
+		 *      }
+		 */
+
 		return checkGenericTypeMatch(bdHolder, descriptor);
 	}
 

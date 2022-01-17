@@ -202,7 +202,7 @@ public abstract class ClassUtils {
 			cl = ClassUtils.class.getClassLoader();
 			if (cl == null) {
 				// getClassLoader() returning null indicates the bootstrap ClassLoader
-				// 加入ClassUtils是被Bootstrap类加载器加载的，则获取系统类加载器
+				// 假如ClassUtils是被Bootstrap类加载器加载的，则获取系统类加载器
 				try {
 					cl = ClassLoader.getSystemClassLoader();
 				}

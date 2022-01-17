@@ -103,6 +103,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private boolean singletonsCurrentlyInDestruction = false;
 
 	/** Disposable bean instances: bean name to disposable instance. */
+	// 需要销毁的bean
 	private final Map<String, Object> disposableBeans = new LinkedHashMap<>();
 
 	/** Map between containing bean names: bean name to Set of bean names that the bean contains. */
@@ -139,6 +140,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
+			// bean添加到单例池，删除二级缓存和三级缓存中的bean
 			this.singletonObjects.put(beanName, singletonObject);
 			this.singletonFactories.remove(beanName);
 			this.earlySingletonObjects.remove(beanName);
@@ -186,16 +188,31 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			singletonObject = this.earlySingletonObjects.get(beanName);
 			if (singletonObject == null && allowEarlyReference) {
+				// 为什么要加锁？
+				// 保证下面两个操作的原子性
+				// this.earlySingletonObjects.put(beanName, singletonObject);
+				//	this.singletonFactories.remove(beanName);
 				synchronized (this.singletonObjects) {
 					// Consistent creation of early reference within full singleton lock
 					singletonObject = this.singletonObjects.get(beanName);
 					if (singletonObject == null) {
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
+							// 从三级缓存singletonFactories中拿lamda表达式
 							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 							if (singletonFactory != null) {
+								// 执行lamda表达式，不需要代理则返回原始对象，需要代理则返回代理对象
+								// 拿到的对象缓存到二级缓存
+								// 关键点在于二级缓存，但是解决循环依赖的突破点在于三级缓存
 								singletonObject = singletonFactory.getObject();
 								this.earlySingletonObjects.put(beanName, singletonObject);
+								// 有个bug
+								// 如果代码在这里堵塞，二级缓存已经赋值了，再次去getBean(A)的时候，就能拿到二级缓存的半成品对象（属性都没赋值）
+							/*	try {
+									Thread.sleep(100000);
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}*/
 								this.singletonFactories.remove(beanName);
 							}
 						}
@@ -234,6 +251,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					this.suppressedExceptions = new LinkedHashSet<>();
 				}
 				try {
+					// 执行lamda表达式的创建bean
 					singletonObject = singletonFactory.getObject();
 					newSingleton = true;
 				}
@@ -415,6 +433,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param beanName the name of the bean
 	 * @param dependentBeanName the name of the dependent bean
 	 */
+	// 当前Bean是UserService, UserService依赖OrderService  -  beanName：orderService, dependentBeanName：userService
 	public void registerDependentBean(String beanName, String dependentBeanName) {
 		String canonicalName = canonicalName(beanName);
 
@@ -575,6 +594,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 
 		// dependentBeanMap表示某bean被哪些bean依赖了
 		// 所以现在要销毁某个bean时，如果这个Bean还被其他Bean依赖了，那么也得销毁其他Bean
+		// 需要先销毁其他bean
 		// Trigger destruction of dependent beans first...
 		Set<String> dependencies;
 		synchronized (this.dependentBeanMap) {
@@ -593,6 +613,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		// Actually destroy the bean now...
 		if (bean != null) {
 			try {
+				// DisposableBenaAdapter
 				bean.destroy();
 			}
 			catch (Throwable ex) {
@@ -610,14 +631,17 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		}
 		if (containedBeans != null) {
 			for (String containedBeanName : containedBeans) {
+				// 递归，先销毁其他bean
 				destroySingleton(containedBeanName);
 			}
 		}
 
 		// Remove destroyed bean from other beans' dependencies.
+		// User会依赖别的bean，所以在dependentBeanMap中会出现在value中，需要在缓存中的value删掉它
 		synchronized (this.dependentBeanMap) {
 			for (Iterator<Map.Entry<String, Set<String>>> it = this.dependentBeanMap.entrySet().iterator(); it.hasNext();) {
 				Map.Entry<String, Set<String>> entry = it.next();
+				// 获取value，从中删掉beanName，如果是最后一个元素了，就删掉这个it
 				Set<String> dependenciesToClean = entry.getValue();
 				dependenciesToClean.remove(beanName);
 				if (dependenciesToClean.isEmpty()) {
@@ -627,6 +651,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		}
 
 		// Remove destroyed bean's prepared dependency information.
+		// user依赖了哪些bean，既然user都销毁掉了这些缓存信息也就需要删除了
 		this.dependenciesForBeanMap.remove(beanName);
 	}
 

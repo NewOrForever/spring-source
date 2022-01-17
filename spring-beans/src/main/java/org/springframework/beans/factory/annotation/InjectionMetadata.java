@@ -118,6 +118,8 @@ public class InjectionMetadata {
 		if (!elementsToIterate.isEmpty()) {
 			// 遍历每个注入点进行依赖注入
 			for (InjectedElement element : elementsToIterate) {
+				// element存的是AutowiredFiledElement和AutowiredMethodElement
+				// @Resource注解：ResourceElement
 				element.inject(target, beanName, pvs);
 			}
 		}

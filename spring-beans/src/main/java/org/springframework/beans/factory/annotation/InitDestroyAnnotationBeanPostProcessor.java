@@ -103,10 +103,10 @@ public class InitDestroyAnnotationBeanPostProcessor
 	protected transient Log logger = LogFactory.getLog(getClass());
 
 	@Nullable
-	private Class<? extends Annotation> initAnnotationType;  // @PostConstruct
+	private Class<? extends Annotation> initAnnotationType;  // @PostConstruct  -  子类初始化时赋值
 
 	@Nullable
-	private Class<? extends Annotation> destroyAnnotationType;  // @PreDestroy
+	private Class<? extends Annotation> destroyAnnotationType;  // @PreDestroy -  子类初始化时赋值
 
 	private int order = Ordered.LOWEST_PRECEDENCE;
 
@@ -250,6 +250,7 @@ public class InitDestroyAnnotationBeanPostProcessor
 			// 父类的在前面
 			initMethods.addAll(0, currInitMethods);
 			destroyMethods.addAll(currDestroyMethods);
+			// 找父类
 			targetClass = targetClass.getSuperclass();
 		}
 		while (targetClass != null && targetClass != Object.class);
