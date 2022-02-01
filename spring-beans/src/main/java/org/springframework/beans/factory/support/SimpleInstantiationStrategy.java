@@ -59,6 +59,9 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 
 	/**
 	 * 此方法有重载，此方法是用来调用无参构造方法来实例化的
+	 * 多个有参构造方法没有@Autowired注解determin那个点返回的是null，如果
+	 * 没设置autowiremode、beandefinitoin没设置constructorArgumentValues，getbean没有传入参数也能进来
+	 * 这个方法但是是会抛错的，找不到无参构造方法呀
 	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
@@ -79,6 +82,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							// 获取无参构造方法
 							constructorToUse = clazz.getDeclaredConstructor();
 						}
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
@@ -111,6 +115,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			final Constructor<?> ctor, Object... args) {
 
+		// @LookUp注解的方法会放到methodOverrides这个属性
 		if (!bd.hasMethodOverrides()) {
 			if (System.getSecurityManager() != null) {
 				// use own privileged to change accessibility (when security is on)
@@ -122,6 +127,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 			return BeanUtils.instantiateClass(ctor, args);
 		}
 		else {
+			// 又@LookUp注解的方法会去生成代理对象
 			return instantiateWithMethodInjection(bd, beanName, owner, ctor, args);
 		}
 	}

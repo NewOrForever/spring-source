@@ -193,6 +193,7 @@ class ConfigurationClassBeanDefinitionReader {
 	 */
 	@SuppressWarnings("deprecation")  // for RequiredAnnotationBeanPostProcessor.SKIP_REQUIRED_CHECK_ATTRIBUTE
 	private void loadBeanDefinitionsForBeanMethod(BeanMethod beanMethod) {
+		// beanMethod所在的配置类AppConfig
 		ConfigurationClass configClass = beanMethod.getConfigurationClass();
 		MethodMetadata metadata = beanMethod.getMetadata();
 		String methodName = metadata.getMethodName();
@@ -220,6 +221,7 @@ class ConfigurationClassBeanDefinitionReader {
 
 		// Has this effectively been overridden before (e.g. via XML)?
 		// 如果出现了两个@Bean修改的方法名字一样（比如方法重载了），则直接return，并且会把已经存在的BeanDefinition的isFactoryMethodUnique为false
+		// 一个@Bean，一个@Component，那么@Bean会去覆盖@Component
 		if (isOverriddenByExistingDefinition(beanMethod, beanName)) {
 
 			// 如果beanName等于"appConfig"，就会抛异常
@@ -234,6 +236,16 @@ class ConfigurationClassBeanDefinitionReader {
 		ConfigurationClassBeanDefinition beanDef = new ConfigurationClassBeanDefinition(configClass, metadata, beanName);
 		beanDef.setSource(this.sourceExtractor.extractSource(metadata, configClass.getResource()));
 
+		/**
+		 * 1. 如果方法不是static的，那么解析出来的BeanDefinition中：
+		 * 	factoryBeanName为AppConfig所对应的beanName，比如"appConfig"
+		 * 	factoryMethodName为对应的方法名，比如"aService"
+		 * 	factoryClass为AppConfig.class
+		 * 2. 如果方法是static的，那么解析出来的BeanDefinition中：
+		 * 	factoryBeanName为null
+		 * 	factoryMethodName为对应的方法名，比如"aService"
+		 * 	factoryClass也为AppConfig.class
+		 */
 		if (metadata.isStatic()) {
 			// static @Bean method
 			if (configClass.getMetadata() instanceof StandardAnnotationMetadata) {
@@ -335,6 +347,7 @@ class ConfigurationClassBeanDefinitionReader {
 
 		// A bean definition resulting from a component scan can be silently overridden
 		// by an @Bean method, as of 4.2...
+		// 一个@Bean，一个@Component，那么@Bean会去覆盖@Component
 		if (existingBeanDef instanceof ScannedGenericBeanDefinition) {
 			return false;
 		}

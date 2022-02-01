@@ -157,6 +157,7 @@ public abstract class AnnotationConfigUtils {
 				beanFactory.setDependencyComparator(AnnotationAwareOrderComparator.INSTANCE);
 			}
 			// 用来判断某个Bean能不能用来进行依赖注入
+			// 就是依赖注入的时候解析autowirecandidate，qualifier -> generic -> simple
 			if (!(beanFactory.getAutowireCandidateResolver() instanceof ContextAnnotationAutowireCandidateResolver)) {
 				beanFactory.setAutowireCandidateResolver(new ContextAnnotationAutowireCandidateResolver());
 			}
@@ -203,6 +204,7 @@ public abstract class AnnotationConfigUtils {
 		}
 
 		// 注册EventListenerMethodProcessor类型的BeanDefinition，用来处理@EventListener注解的
+		// 通过实现SmartInitializingSingleton接口的方法
 		if (!registry.containsBeanDefinition(EVENT_LISTENER_PROCESSOR_BEAN_NAME)) {
 			RootBeanDefinition def = new RootBeanDefinition(EventListenerMethodProcessor.class);
 			def.setSource(source);

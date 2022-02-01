@@ -139,11 +139,13 @@ class ConstructorResolver {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 这块代码实际就是讲的缓存好的构造方法拿来直接去实例化
 			Object[] argsToResolve = null;
 			synchronized (mbd.constructorArgumentLock) {
 				constructorToUse = (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse != null && mbd.constructorArgumentsResolved) {
 					// Found a cached constructor...
+					// 找到缓存的构造方法和参数直接去实例化
 					argsToUse = mbd.resolvedConstructorArguments;
 					if (argsToUse == null) {
 						argsToResolve = mbd.preparedConstructorArguments;
@@ -160,6 +162,7 @@ class ConstructorResolver {
 
 			// Take specified constructors, if any.
 			// 如果没有指定构造方法，那就获取beanClass中的所有构造方法所谓候选者
+			// 多个构造方法或者一个无参构造方法时chosenCtors是null
 			Constructor<?>[] candidates = chosenCtors;
 			if (candidates == null) {
 				Class<?> beanClass = mbd.getBeanClass();
@@ -175,6 +178,7 @@ class ConstructorResolver {
 			}
 
 			// 如果只有一个候选构造方法，并且没有指定所要使用的构造方法参数值，并且该构造方法是无参的，那就直接用这个无参构造方法进行实例化了
+			// getbean没有指定参数、beandefinition没有指定参数
 			if (candidates.length == 1 && explicitArgs == null && !mbd.hasConstructorArgumentValues()) {
 				Constructor<?> uniqueCandidate = candidates[0];
 				if (uniqueCandidate.getParameterCount() == 0) {
@@ -188,13 +192,16 @@ class ConstructorResolver {
 				}
 			}
 
+			// 一个有参没有@Autowired、一个required=true、不小于一个的required=false的构造方法在determin的时候返回非空
 			// Need to resolve the constructor.
+			// 这个参数决定了createArgumentArray这个方法中是否要自动找bean
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
 			ConstructorArgumentValues resolvedValues = null;
 
 			// 确定要选择的构造方法的参数个数的最小值，后续判断候选构造方法的参数个数如果小于minNrOfArgs，则直接pass掉
 			int minNrOfArgs;
+			// 只要getbean指定了参数，resolvedValues就是空，遍历时if (resolvedValues != null)就不会成立，就只会走getBean指定参数的情况
 			if (explicitArgs != null) {
 				// 如果直接传了构造方法参数值，那么所用的构造方法的参数个数肯定不能少于
 				minNrOfArgs = explicitArgs.length;
@@ -204,6 +211,7 @@ class ConstructorResolver {
 				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
 				resolvedValues = new ConstructorArgumentValues();
 				// 处理RuntimeBeanReference
+				// beandefinition中指定的index argument 和generic argument会添加到resolvedValues中
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 
@@ -218,6 +226,7 @@ class ConstructorResolver {
 				// 参数个数
 				int parameterCount = candidate.getParameterCount();
 
+				// 就是先遍历的（参数最多的）符合条件了那么直接跳出循环
 				// 本次遍历时，之前已经选出来了所要用的构造方法和入参对象，并且入参对象个数比当前遍历到的这个构造方法的参数个数多，则不用再遍历，退出循环
 				if (constructorToUse != null && argsToUse != null && argsToUse.length > parameterCount) {
 					// Already found greedy constructor that can be satisfied ->
@@ -231,7 +240,10 @@ class ConstructorResolver {
 
 				ArgumentsHolder argsHolder;
 				Class<?>[] paramTypes = candidate.getParameterTypes();
+				// 整个的优先级：如果getbean指定参数则走精确匹配参数个数的逻辑、如果@Autowired指定则遍历指定的构造方法先根据
+				// beandefinition找参数值，没找到则根据autowiring来判断是否需要去beanfactory中找，false则抛错continue遍历下一个构造方法
 				// 没有通过getBean()指定构造方法参数值
+				// beandefintion指定了构造方法的参数值
 				if (resolvedValues != null) {
 					try {
 						// 如果在构造方法上使用了@ConstructorProperties，那么就直接取定义的值作为构造方法的参数名
@@ -245,7 +257,9 @@ class ConstructorResolver {
 							}
 						}
 
-						// 根据参数类型、参数名找到对应的bean对象
+						/**
+						 * 根据参数类型、参数名找到对应的bean对象
+						 */
 						argsHolder = createArgumentArray(beanName, mbd, resolvedValues, bw, paramTypes, paramNames,
 								getUserDeclaredConstructor(candidate), autowiring, candidates.length == 1);
 					}
@@ -265,6 +279,8 @@ class ConstructorResolver {
 				else {
 					// Explicit arguments given -> arguments length must match exactly.
 					// 没有通过BeanDefinition指定构造方法参数值，但是在调getBean方法是传入了参数值，那就表示只能用对应参数个数的构造方法
+					// beandefinition没有指定参数值时autowiremode配不配置都没用
+					// 只要getbean指定了参数，就走else不管beandefinition有没有指定参数
 					if (parameterCount != explicitArgs.length) {
 						continue;
 					}
@@ -282,6 +298,8 @@ class ConstructorResolver {
 					constructorToUse = candidate;
 					argsHolderToUse = argsHolder;
 					argsToUse = argsHolder.arguments;
+					// 最小的值给到该参数与下次的值对比，如果下次的值和该值相等就会进入else if，那么在严格模式下是会报错的
+					// 在宽松模式下，会使用第一次匹配的构造方法和参数值
 					minTypeDiffWeight = typeDiffWeight;
 					ambiguousConstructors = null;
 				}
@@ -309,7 +327,7 @@ class ConstructorResolver {
 						"Could not resolve matching constructor on bean class [" + mbd.getBeanClassName() + "] " +
 						"(hint: specify index/type/name arguments for simple parameters to avoid type ambiguities)");
 			}
-			// 如果有可用的构造方法，但是有多个
+			// 如果有可用的构造方法，但是有多个，严格模式会报错
 			else if (ambiguousConstructors != null && !mbd.isLenientConstructorResolution()) {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 						"Ambiguous constructor matches found on bean class [" + mbd.getBeanClassName() + "] " +
@@ -324,6 +342,7 @@ class ConstructorResolver {
 		}
 
 		Assert.state(argsToUse != null, "Unresolved constructor arguments");
+		// instantiate方法会去解析@LookUp注解
 		bw.setBeanInstance(instantiate(beanName, mbd, constructorToUse, argsToUse));
 		return bw;
 	}
@@ -433,6 +452,16 @@ class ConstructorResolver {
 		boolean isStatic;
 
 		// 注意，这里拿到的是factoryBeanName，而不是factoryMethodName，比如AppConfig对象
+		/**
+		 * 1. 如果方法不是static的，那么解析出来的BeanDefinition中：
+		 * 	factoryBeanName为AppConfig所对应的beanName，比如"appConfig"
+		 * 	factoryMethodName为对应的方法名，比如"aService"
+		 * 	factoryClass为AppConfig.class
+		 * 2. 如果方法是static的，那么解析出来的BeanDefinition中：
+		 * 	factoryBeanName为null
+		 * 	factoryMethodName为对应的方法名，比如"aService"
+		 * 	factoryClass也为AppConfig.class
+		 */
 		String factoryBeanName = mbd.getFactoryBeanName();
 		if (factoryBeanName != null) {
 			if (factoryBeanName.equals(beanName)) {
@@ -491,6 +520,9 @@ class ConstructorResolver {
 			factoryClass = ClassUtils.getUserClass(factoryClass);
 
 			List<Method> candidates = null;
+			// configurationclass中loadbeandefinitons方法解析beanMethod定义的beandefinition
+			// 方法重载，设置isFactoryMethodUnique为false，只有一个方法的话则设置true
+			// isFactoryMethodUnique为true则直接调用该factoryMedthod,否则则拿到所有重载的方法
 			if (mbd.isFactoryMethodUnique) {
 				if (factoryMethodToUse == null) {
 					factoryMethodToUse = mbd.getResolvedFactoryMethod();
@@ -714,12 +746,15 @@ class ConstructorResolver {
 
 		int minNrOfArgs = cargs.getArgumentCount();
 
+		// 遍历将参数添加到resolvedValues中
 		for (Map.Entry<Integer, ConstructorArgumentValues.ValueHolder> entry : cargs.getIndexedArgumentValues().entrySet()) {
 			int index = entry.getKey();
 			if (index < 0) {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 						"Invalid constructor argument index: " + index);
 			}
+			// beandefinition中只设置了下标为2的index argment
+			// 那么实际构造方法的参数值至少是3个
 			if (index + 1 > minNrOfArgs) {
 				minNrOfArgs = index + 1;
 			}
@@ -781,6 +816,7 @@ class ConstructorResolver {
 			// Try to find matching constructor argument value, either indexed or generic.
 			ConstructorArgumentValues.ValueHolder valueHolder = null;
 			// 如果在BeanDefinition中指定了构造方法参数值，则拿到具体的对象
+			// 需要匹配参数类型和参数名称是否一致
 			if (resolvedValues != null) {
 				valueHolder = resolvedValues.getArgumentValue(paramIndex, paramType, paramName, usedValueHolders);
 				// If we couldn't find a direct match and are not supposed to autowire,
@@ -830,6 +866,8 @@ class ConstructorResolver {
 				MethodParameter methodParam = MethodParameter.forExecutable(executable, paramIndex);
 				// No explicit match found: we're either supposed to autowire or
 				// have to fail creating an argument array for the given constructor.
+				// 找@Autowired注解的构造方法那个方法返回非空或autowiremode配置了则为true
+				// 那么当valueholder为空时就可以去beanfactory中根据类型和名称来找bean（就是依赖注入找bean）了
 				if (!autowiring) {
 					throw new UnsatisfiedDependencyException(
 							mbd.getResourceDescription(), beanName, new InjectionPoint(methodParam),

@@ -233,11 +233,15 @@ class ConfigurationClassParser {
 			return;
 		}
 
-
+		// UserService也导入了AccountService，那么AccountService被当作配置类再次解析进到这里
+		// 此时configurationClasses存的是importedBy=OrderService的ConfigurationClass也就是existingClass
+		// configClass是importedBy=UserService的ConfigurationClass
 		ConfigurationClass existingClass = this.configurationClasses.get(configClass);
 		if (existingClass != null) {
 			if (configClass.isImported()) {
 				// OrderService导入了AccountService，UserService也导入了AccountService，就会符合这个条件
+				// AccountService.importedBy=OrderService, AccountService.importedBy=UserService
+				// importedBy这个属性是set，OrderService和UserService都添加到该属性
 				if (existingClass.isImported()) {
 					existingClass.mergeImportedBy(configClass);
 				}
@@ -275,6 +279,13 @@ class ConfigurationClassParser {
 	protected final SourceClass doProcessConfigurationClass(
 			ConfigurationClass configClass, SourceClass sourceClass, Predicate<String> filter)
 			throws IOException {
+		/**
+		 * 在整个解析配置类的过程中：
+		 * 	- 每个配置类都有可能产生多个新的配置类，会进行递归解析到每个配置类
+		 * 	- 只有加了@ComponentScan的情况下，才会去注册beandefinition，其他情况下需要在解析完成一批次后在loadBeanDefinitions中注册
+		 * 	- 每个配置类解析完成后都会加入到configurationClasses属性中
+		 * 	- 每批次配置类解析完成后，配置类中通过@Import导入的类如果实现了DeferredImportSelector，那么该类就会推迟到这时才去处理
+		 */
 
 		if (configClass.getMetadata().isAnnotated(Component.class.getName())) {
 			// Recursively process any member (nested) classes first
@@ -283,6 +294,7 @@ class ConfigurationClassParser {
 			processMemberClasses(configClass, sourceClass, filter);
 		}
 
+		// 将PropertySource引入的配置信息添加到environment中去
 		// Process any @PropertySource annotations
 		for (AnnotationAttributes propertySource : AnnotationConfigUtils.attributesForRepeatable(
 				sourceClass.getMetadata(), PropertySources.class,
@@ -305,6 +317,8 @@ class ConfigurationClassParser {
 			for (AnnotationAttributes componentScan : componentScans) {
 				// The config class is annotated with @ComponentScan -> perform the scan immediately
 				// 这里就会进行扫描，得到的BeanDefinition会注册到Spring容器中
+				// 就是扫描包得到beandefinition
+				// scanner.doscan
 				Set<BeanDefinitionHolder> scannedBeanDefinitions =
 						this.componentScanParser.parse(componentScan, sourceClass.getMetadata().getClassName());
 				// Check the set of scanned definitions for any further config classes and parse recursively if needed
@@ -315,6 +329,7 @@ class ConfigurationClassParser {
 					}
 					// 检查扫描出来的BeanDefinition是不是配置类（full和lite）
 					if (ConfigurationClassUtils.checkConfigurationClassCandidate(bdCand, this.metadataReaderFactory)) {
+						// 递归去解析扫描出来的配置类
 						parse(bdCand.getBeanClassName(), holder.getBeanName());
 					}
 				}
@@ -387,7 +402,13 @@ class ConfigurationClassParser {
 			// 排序
 			OrderComparator.sort(candidates);
 
-
+			/**
+			 * AppConfig中有一个内部类A， A上用@Import导入AppConfig.class，就出现了循环import
+			 * 	AppConfig进来importStack塞入当前在解析的AppConfig配置类 -> 解析A这个配置类
+			 * 	-> 进入@Import解析里面 -> A这个配置类放入importStack -> 又去解析A中导入的AppConfig
+			 * 	-> 再次进到这里this.importStack.contains(configClass)这个判断就是true的 -> 循环引用报错
+			 * 如果A没导入AppConfig，就不会存在循环导入的问题，A解析完成后，AppConfig继续解析，importStack就删掉AppConfig防止问题
+			 */
 			for (SourceClass candidate : candidates) {
 				// AppConfig中有一个内部类A， A上用@Import导入AppConfig.class，就出现了循环import
 				if (this.importStack.contains(configClass)) {
@@ -395,11 +416,14 @@ class ConfigurationClassParser {
 					this.problemReporter.error(new CircularImportProblem(configClass, this.importStack));
 				}
 				else {
+					// 把当前在解析的配置类放入importStack
 					this.importStack.push(configClass);
 					try {
+						// 解析这个内部类
 						processConfigurationClass(candidate.asConfigClass(configClass), filter);
 					}
 					finally {
+						// 把当前在解析的配置类从importStack中拿出
 						this.importStack.pop();
 					}
 				}
@@ -598,6 +622,7 @@ class ConfigurationClassParser {
 					if (candidate.isAssignable(ImportSelector.class)) {
 						// Candidate class is an ImportSelector -> delegate to it to determine imports
 						Class<?> candidateClass = candidate.loadClass();
+						// candidate实例化，也就意味着该类不会当作配置类不会有beandefinition
 						ImportSelector selector = ParserStrategyUtils.instantiateClass(candidateClass, ImportSelector.class,
 								this.environment, this.resourceLoader, this.registry);
 						Predicate<String> selectorFilter = selector.getExclusionFilter();
@@ -605,7 +630,6 @@ class ConfigurationClassParser {
 							exclusionFilter = exclusionFilter.or(selectorFilter);
 						}
 						// 如果import的是DeferredImportSelector，表示推迟导入
-						//
 						if (selector instanceof DeferredImportSelector) {
 							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						} else {

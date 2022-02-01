@@ -1178,7 +1178,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * factory method, constructor autowiring, or simple instantiation.
 	 * @param beanName the name of the bean
 	 * @param mbd the bean definition for the bean
-	 * @param args explicit arguments to use for constructor or factory method invocation
+	 * @param args explicit arguments to use for constructor or factory method invocation，getBean传入的参数
 	 * @return a BeanWrapper for the new instance
 	 * @see #obtainFromSupplier
 	 * @see #instantiateUsingFactoryMethod
@@ -1195,6 +1195,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		// BeanDefinition中添加了Supplier，则调用Supplier来得到对象
+		// beanDefinition.setInstanceSupplier
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
 			return obtainFromSupplier(instanceSupplier, beanName);
@@ -1207,6 +1208,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Shortcut when re-creating the same bean...
 		// 一个原型BeanDefinition，会多次来创建Bean，那么就可以把该BeanDefinition所要使用的构造方法缓存起来，避免每次都进行构造方法推断
+		// resolvedConstructorOrFactoryMethod：缓存的构造方法
+		// constructorArgumentsResolved：缓存的构造方法参数值
 		boolean resolved = false;
 		boolean autowireNecessary = false;
 		if (args == null) {
@@ -1225,6 +1228,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {
+				// beandefinition的resolvedConstructorOrFactoryMethod不为空且constructorArgumentsResolved为false则为无参构造方法
 				// 构造方法已经找到了，但是没有参数，那就表示是无参，直接进行实例化
 				return instantiateBean(beanName, mbd);
 			}
@@ -1235,6 +1239,17 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Candidate constructors for autowiring?
 		// 提供一个扩展点，可以利用SmartInstantiationAwareBeanPostProcessor来控制用beanClass中的哪些构造方法
 		// 比如AutowiredAnnotationBeanPostProcessor会把加了@Autowired注解的构造方法找出来，具体看代码实现会更复杂一点
+		/**
+		 * 没有@Autowired注解：
+		 * 	1. 只有一个无参构造方法，返回null
+		 * 	2. 只有一个有参构造方法，返回该构造方法
+		 * 	3. 有多个构造方法，返回null
+		 * 有@Autowired注解：
+		 * 	1. 有一个构造方法有@Autowired注解，返回该构造方法
+		 * 	2. 有多个构造方法有@Autowired注解且required=false，返回所有required=false的构造方法及无参构造方法
+		 * 	3. 有多个required=true的构造方法，抛错
+		 * 	4. 有一个required=true的构造方法和其他required=false的构造方法，抛错
+		 */
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
 
 		// 如果推断出来了构造方法，则需要给构造方法赋值，也就是给构造方法参数赋值，也就是构造方法注入
@@ -1659,7 +1674,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #ignoreDependencyInterface(Class)
 	 */
 	protected boolean isExcludedFromDependencyCheck(PropertyDescriptor pd) {
-		// 属性类型是否在ignoredDependencyTypes中
+		// 属性类型是否在ignoredDependencyTypes中,ignoredDependency在refresh中会设置
 		// 该属性的set方法是否是实现的某个接口中所定义的，该接口是否在ignoredDependencyInterfaces中
 
 		return (AutowireUtils.isExcludedFromDependencyCheck(pd) ||

@@ -106,6 +106,7 @@ class ConfigurationClassEnhancer {
 			}
 			return configClass;
 		}
+		// 创建代理类
 		Class<?> enhancedClass = createClass(newEnhancer(configClass, classLoader));
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Successfully enhanced %s; enhanced class name is: %s",
@@ -137,6 +138,8 @@ class ConfigurationClassEnhancer {
 		Class<?> subclass = enhancer.createClass();
 		// Registering callbacks statically (as opposed to thread-local)
 		// is critical for usage in an OSGi environment (SPR-5932)...
+		// 回调主要用到BeanMethodInterceptor
+		// 在createBeanInstance的时候使用factoryMethod来创建bean的时候会进入到拦截方法去处理
 		Enhancer.registerStaticCallbacks(subclass, CALLBACKS);
 		return subclass;
 	}
@@ -315,6 +318,7 @@ class ConfigurationClassEnhancer {
 			}
 
 			// 如果代理对象正在执行的方法就是正在创建Bean的工厂方法，那就直接执行对应的方法得到对象作为Bean
+			// 在createBeanInstance创建bean实例的时候会通过currentlyInvokedFactoryMethod.set(factoryMethod);来设置
 			if (isCurrentlyInvokedFactoryMethod(beanMethod)) {
 				// The factory is calling the bean method in order to instantiate and register the bean
 				// (i.e. via a getBean() call) -> invoke the super implementation of the method to actually
