@@ -286,7 +286,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		 * 		new RootBeanDefinition(AutowiredAnnotationBeanPostProcessor.class);
 		 * 		new RootBeanDefinition(CommonAnnotationBeanPostProcessor.class);
 		 * 		new RootBeanDefinition(EventListenerMethodProcessor.class);
-		 *			new RootBeanDefinition(DefaultEventListenerFactory.class);
+		 *		new RootBeanDefinition(DefaultEventListenerFactory.class);
 		 *		- register(componentClasses)
 		 *			new AnnotatedGenericBeanDefinition(Appconfig.class);
 		 *	扫描包的方式启动的话，我们自己定义的beandefinition都生成了，就不止这么多了

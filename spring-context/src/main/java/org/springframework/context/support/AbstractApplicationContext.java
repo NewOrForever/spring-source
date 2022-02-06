@@ -754,6 +754,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
 		}
 
+		// 手动注册单例bean，不会生成beandefinition添加到beandefinitionmap中去
 		// Register default environment beans.
 		if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
 			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
@@ -787,7 +788,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
 
 		// 重点
-		// 这里getBeanFactoryPostProcessors()取得的值是在context.addBeanFactoryPostProcessor中添加的
+		// 这里getBeanFactoryPostProcessors()取得的值是手动在context.addBeanFactoryPostProcessor中添加的
 		// 添加的时候不要添加bean，会重复执行方法的额，添加匿名类或者是非bean实现了接口
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 

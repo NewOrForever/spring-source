@@ -1953,6 +1953,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	// 验证是否bean需要销毁
 	protected boolean requiresDestruction(Object bean, RootBeanDefinition mbd) {
+		/**
+		 * 什么样的bean是需要被销毁的bean
+		 * 	1. 实现DisposableBean
+		 *  2. 实现AutoClosable
+		 *  3. 实现DestructionAwareBeanPostProcessor且requiresDestruction(bean)返回true
+		 *     - InitDestroyAnnotationBeanPostProcessor中使得拥有@PreDestroy注解了的方法就是DisposableBean，注解多个方法的话都会执行
+		 *  4. BeanDefinition中指定了destroyMethod
+		 *     - merge节点设置destroyMethodName="(inferred)", bean再写个close方法或者shutdown方法
+		 *     	设置beandefinition的destroyMethodName这种方式如果bean的close方法和shutdown方法
+		 *     	同时存在则只会执行close方法，源码中是先判断是否有close方法没有才会去找shutdown方法
+		 */
 		return (bean.getClass() != NullBean.class && (DisposableBeanAdapter.hasDestroyMethod(bean, mbd) ||
 				// destructionAware有值且DestructionAwareBeanPostProcessor.requiresDestruction=true
 				// InitDestroyAnnotationBeanPostProcessor - @preDestroy

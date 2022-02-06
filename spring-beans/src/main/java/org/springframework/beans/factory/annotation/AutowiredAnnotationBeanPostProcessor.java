@@ -540,7 +540,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 			// 遍历targetClass中的所有Method
 			ReflectionUtils.doWithLocalMethods(targetClass, method -> {
 
-				// 过滤桥接方法
+				// 过滤桥接方法（实现了接口的方法）
 				Method bridgedMethod = BridgeMethodResolver.findBridgedMethod(method);
 				if (!BridgeMethodResolver.isVisibilityBridgeMethodPair(method, bridgedMethod)) {
 					return;
@@ -724,7 +724,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 			desc.setContainingClass(bean.getClass());
 
 			// 当前bean所依赖的bean的beanName（如UserService依赖OrderService，OrderService的beanName就是autowiredBeanNames）
-			// 根据类型找出多个bean -> autowirecandidate属性判断 -> 泛型检查 -> qualifier注解接茬 -> @Primary筛选 -> @Priority -> 字段参数名或方法参数名
+			// 根据类型找出多个bean -> autowirecandidate属性判断 -> 泛型检查 -> qualifier注解检查 -> @Primary筛选 -> @Priority -> 字段参数名或方法参数名
 			// 这么些步骤来筛选bean
 			Set<String> autowiredBeanNames = new LinkedHashSet<>(1);
 			Assert.state(beanFactory != null, "No BeanFactory available");
