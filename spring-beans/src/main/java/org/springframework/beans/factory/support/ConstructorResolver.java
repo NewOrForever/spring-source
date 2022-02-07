@@ -520,7 +520,7 @@ class ConstructorResolver {
 			factoryClass = ClassUtils.getUserClass(factoryClass);
 
 			List<Method> candidates = null;
-			// configurationclass中loadbeandefinitons方法解析beanMethod定义的beandefinition
+			// configurationclassbeanpostprocessor中loadbeandefinitons方法解析beanMethod定义的beandefinition
 			// 方法重载，设置isFactoryMethodUnique为false，只有一个方法的话则设置true
 			// isFactoryMethodUnique为true则直接调用该factoryMedthod,否则则拿到所有重载的方法
 			if (mbd.isFactoryMethodUnique) {
@@ -533,6 +533,7 @@ class ConstructorResolver {
 			}
 
 			// 找到对应的@Bean方法，由于可能参数重载，所以有可能会有多个
+			// mbd.isFactoryMethodUnique为false时，有重载的@Bean方法，candidates就不为空
 			if (candidates == null) {
 				candidates = new ArrayList<>();
 				Method[] rawCandidates = getCandidateMethods(factoryClass, mbd);

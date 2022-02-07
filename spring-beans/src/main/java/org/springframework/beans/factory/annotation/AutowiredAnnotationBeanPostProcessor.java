@@ -421,7 +421,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 						candidateConstructors = new Constructor<?>[] {primaryConstructor};
 					}
 					else {
-						// 如果有多个有参或是一个无参、并且没有添加@Autowired的构造方法，是会返回空的
+						// 如果有多个有构造方法或是一个无参构造方法、并且没有添加@Autowired的构造方法，是会返回空的
 						candidateConstructors = new Constructor<?>[0];
 					}
 					this.candidateConstructorsCache.put(beanClass, candidateConstructors);

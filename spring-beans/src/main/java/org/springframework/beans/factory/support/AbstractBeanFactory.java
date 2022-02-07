@@ -255,6 +255,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object beanInstance;
 
 		// Eagerly check singleton cache for manually registered singletons.
+		// 这个getSingleton就是循环引用的那个
+		// UserService创建原始对象后 -> OrderService属性赋值 -> 创建OrderService这个bean -> OrderService需要给UserService属性赋值
+		// -> UserService又回到这里，此时就可以执行三级缓存了拿到原始对象或者原始对象的代理对象
 		Object sharedInstance = getSingleton(beanName);
 		// 单例bean已经创建，直接用单例池中获取到的
 		if (sharedInstance != null && args == null) {
