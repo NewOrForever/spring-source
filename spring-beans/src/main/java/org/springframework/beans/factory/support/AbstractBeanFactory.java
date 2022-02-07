@@ -1891,6 +1891,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
 		// 如果&xxx，那么就直接返回单例池中的对象
+		// 容器初始化创建非懒加载单例bean的时候如果当前遍历到的bean是factoryBean则会用&xxx去getBean，拿到的是FactoryBean实例对象
+		// 除非当前bean实现的是SmartFactoryBean,且实现的方法isEagerInit返回true，那么它就会在容器初始化的时候继续拿xxx去getBean，此时拿的是getObject
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
 			if (beanInstance instanceof NullBean) {
 				return beanInstance;

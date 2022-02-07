@@ -947,6 +947,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				if (isFactoryBean(beanName)) {
 					// 获取FactoryBean对象
+					// 容器初始化创建非懒加载单例bean的时候如果当前遍历到的bean是factoryBean则会用&xxx去getBean，拿到的是FactoryBean实例对象
+					// 除非当前bean实现的是SmartFactoryBean,且实现的方法isEagerInit返回true，那么它就会在容器初始化的时候继续拿xxx去getBean，此时拿的是getObject
+					// 否则就只能在下次getBean("xxx")的时候才能拿到getObject
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
@@ -967,7 +970,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 					}
 				}
 				else {
-					// 创建Bean对象
+					// 不是factoryBean则直接去创建Bean对象
 					getBean(beanName);
 				}
 			}
