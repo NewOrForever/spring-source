@@ -91,6 +91,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 				aspectNames = this.aspectBeanNames;
 				if (aspectNames == null) {
 					List<Advisor> advisors = new ArrayList<>();
+					// 切面beanName的集合
 					aspectNames = new ArrayList<>();
 
 					// 把所有beanNames拿出来遍历，判断某个bean的类型是否是Aspect
@@ -106,6 +107,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 						if (beanType == null) {
 							continue;
 						}
+						// 是否是Aspect（有没有@Aspect注解且不是acj编译器）
 						if (this.advisorFactory.isAspect(beanType)) {
 							aspectNames.add(beanName);
 							// 切面的注解信息
@@ -118,9 +120,11 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 								MetadataAwareAspectInstanceFactory factory =
 										new BeanFactoryAspectInstanceFactory(this.beanFactory, beanName);
 								// 利用BeanFactoryAspectInstanceFactory来解析Aspect类
+								// 解析成advisor
 								List<Advisor> classAdvisors = this.advisorFactory.getAdvisors(factory);
 								if (this.beanFactory.isSingleton(beanName)) {
 									// 缓存切面所对应的所有Advisor对象
+									// 原型bean就直接拿缓存的
 									this.advisorsCache.put(beanName, classAdvisors);
 								}
 								else {

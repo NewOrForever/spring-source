@@ -84,6 +84,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		// invokes proceed() in a `try` block and only invokes the @After advice method
 		// in a corresponding `finally` block.
 		Comparator<Method> adviceKindComparator = new ConvertingComparator<>(
+				// 优先级around > before > ...
 				new InstanceComparator<>(
 						Around.class, Before.class, After.class, AfterReturning.class, AfterThrowing.class),
 				(Converter<Method, Annotation>) method -> {
@@ -91,6 +92,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 					return (ann != null ? ann.getAnnotation() : null);
 				});
 		Comparator<Method> methodNameComparator = new ConvertingComparator<>(Method::getName);
+		// 先根据注解排序再根据方法名来排序
 		adviceMethodComparator = adviceKindComparator.thenComparing(methodNameComparator);
 	}
 
@@ -180,6 +182,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 		// 拿到切面类中所有没有加@Pointcut的方法
 		ReflectionUtils.doWithMethods(aspectClass, methods::add, adviceMethodFilter);
 		// 对方法进行排序，按注解和方法名字进行排序
+		// around > before > ...
 		if (methods.size() > 1) {
 			methods.sort(adviceMethodComparator);
 		}
@@ -226,6 +229,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 		// expressionPointcut是pointcut
 		// candidateAdviceMethod承载了advice
+		// 切面类上@Before...注解 -> InstantiationModelAwarePointcutAdvisorImpl这个advisor
 		return new InstantiationModelAwarePointcutAdvisorImpl(expressionPointcut, candidateAdviceMethod,
 				this, aspectInstanceFactory, declarationOrderInAspect, aspectName);
 	}
