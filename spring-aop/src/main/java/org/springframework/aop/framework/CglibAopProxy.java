@@ -170,7 +170,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			Class<?> proxySuperClass = rootClass;
 			// 如果被代理类本身就已经是Cglib所生成的代理类了
 			if (rootClass.getName().contains(ClassUtils.CGLIB_CLASS_SEPARATOR)) {
-				// 获取真正的被代理类
+				// 获取真正的被代理类（拿父类）
 				proxySuperClass = rootClass.getSuperclass();
 				// 获取被代理类所实现的接口
 				Class<?>[] additionalInterfaces = rootClass.getInterfaces();
@@ -183,6 +183,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			validateClassIfNecessary(proxySuperClass, classLoader);
 
 			// Configure CGLIB Enhancer...
+			// new Enhancer()
 			Enhancer enhancer = createEnhancer();
 			if (classLoader != null) {
 				enhancer.setClassLoader(classLoader);
@@ -200,6 +201,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			enhancer.setStrategy(new ClassLoaderAwareGeneratorStrategy(classLoader));
 
 			// 获取和被代理类所匹配的Advisor
+			// 代理逻辑，CallbackFilter的accept方法返回的int值就是Callback[]数组的下标 -> 最终决定使用哪个代理逻辑
 			Callback[] callbacks = getCallbacks(rootClass);
 			Class<?>[] types = new Class<?>[callbacks.length];
 			for (int x = 0; x < types.length; x++) {
@@ -296,6 +298,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 		boolean isStatic = this.advised.getTargetSource().isStatic();
 
 		// Choose an "aop" interceptor (used for AOP calls).
+		// advised封装到DynamicAdvisedInterceptor，执行代理逻辑时进入intercept方法 -> 找匹配的advice
 		Callback aopInterceptor = new DynamicAdvisedInterceptor(this.advised);
 
 		// Choose a "straight to target" interceptor. (used for calls that are
@@ -339,6 +342,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			// TODO: small memory optimization here (can skip creation for methods with no advice)
 			for (int x = 0; x < methods.length; x++) {
 				Method method = methods[x];
+				// 拿到匹配的advice链
 				List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, rootClass);
 				fixedCallbacks[x] = new FixedChainStaticTargetInterceptor(
 						chain, this.advised.getTargetSource().getTarget(), this.advised.getTargetClass());
@@ -674,6 +678,8 @@ class CglibAopProxy implements AopProxy, Serializable {
 		@Override
 		@Nullable
 		public Object intercept(Object proxy, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
+			// AOP_PROXY
+
 			Object oldProxy = null;
 			boolean setProxyContext = false;
 			Object target = null;
@@ -687,6 +693,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 				// Get as late as possible to minimize the time we "own" the target, in case it comes from a pool...
 				target = targetSource.getTarget();
 				Class<?> targetClass = (target != null ? target.getClass() : null);
+				// 拿到匹配的advice链路（advisor -> interceptor）
 				List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 				Object retVal;
 				// Check whether we only have one InvokerInterceptor: that is,
@@ -697,10 +704,14 @@ class CglibAopProxy implements AopProxy, Serializable {
 					// it does nothing but a reflective operation on the target, and no hot
 					// swapping or fancy proxying.
 					Object[] argsToUse = AopProxyUtils.adaptArgumentsIfNecessary(method, args);
+					// 没有匹配的代理逻辑
+					// 直接执行方法
 					retVal = methodProxy.invoke(target, argsToUse);
 				}
 				else {
 					// We need to create a method invocation...
+					// 封装一个CglibMethodInvocation extends ReflectiveMethodInvocation对象执行
+					// 执行链路
 					retVal = new CglibMethodInvocation(proxy, target, method, args, targetClass, chain, methodProxy).proceed();
 				}
 				retVal = processReturnType(proxy, target, method, retVal);
@@ -854,6 +865,17 @@ class CglibAopProxy implements AopProxy, Serializable {
 		 */
 		@Override
 		public int accept(Method method) {
+		/**
+		* 	Callback[] mainCallbacks = new Callback[] {
+		* 	aopInterceptor,  // for normal advice，执行Interceptor链
+		* 	targetInterceptor,  // invoke target without considering advice, if optimized 将代理对象设置到ThreadLocal中，AopContext.setCurrentProxy(proxy)
+		* 	new SerializableNoOp(),  // no override for methods mapped to this
+		* 	targetDispatcher, this.advisedDispatcher,
+		* 	new EqualsInterceptor(this.advised),
+		* 	new HashCodeInterceptor(this.advised)
+		* 	};
+		*/
+
 			if (AopUtils.isFinalizeMethod(method)) {
 				logger.trace("Found finalize() method - using NO_OVERRIDE");
 				return NO_OVERRIDE;
@@ -881,6 +903,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 			}
 			Class<?> targetClass = this.advised.getTargetClass();
 			// Proxy is not yet available, but that shouldn't matter.
+			// 拿到匹配的advice链
 			List<?> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 			boolean haveAdvice = !chain.isEmpty();
 			boolean exposeProxy = this.advised.isExposeProxy();

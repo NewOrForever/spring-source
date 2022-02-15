@@ -454,13 +454,17 @@ class ConstructorResolver {
 		// 注意，这里拿到的是factoryBeanName，而不是factoryMethodName，比如AppConfig对象
 		/**
 		 * 1. 如果方法不是static的，那么解析出来的BeanDefinition中：
-		 * 	factoryBeanName为AppConfig所对应的beanName，比如"appConfig"
-		 * 	factoryMethodName为对应的方法名，比如"aService"
-		 * 	factoryClass为AppConfig.class
+		 * 	- factoryBeanName为AppConfig所对应的beanName，比如"appConfig"
+		 * 	- factoryMethodName为对应的方法名，比如"aService"
+		 * 	- factoryClass为AppConfig.class
+		 * 	- beanClass为空
 		 * 2. 如果方法是static的，那么解析出来的BeanDefinition中：
-		 * 	factoryBeanName为null
-		 * 	factoryMethodName为对应的方法名，比如"aService"
-		 * 	factoryClass也为AppConfig.class
+		 * 	- factoryBeanName为null
+		 * 	- factoryMethodName为对应的方法名，比如"aService"
+		 * 	- factoryClass也为AppConfig.class
+		 * 	- beanClass是AppConfig.class
+		 *	3. 当factoryMethod是static方法时，factoryBean为空，可以直接执行factoryMethod.invoke(null, args)方法
+		 * 	当factoryMethod不是static方法时，factoryBean不为空（如果加了@Configuration注解则该对象是AppConfig的代理对象）
 		 */
 		String factoryBeanName = mbd.getFactoryBeanName();
 		if (factoryBeanName != null) {
@@ -486,6 +490,7 @@ class ConstructorResolver {
 						"bean definition declares neither a bean class nor a factory-bean reference");
 			}
 			factoryBean = null;
+			// static时beandefinition的beanclass是AppConfig.class
 			factoryClass = mbd.getBeanClass();
 			isStatic = true;
 		}

@@ -629,7 +629,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Check manually registered singletons too.
-		// 手动直接registerSingleton的bean
+		// 手动直接registerSingleton的bean（没有注册beandefinition）
 		for (String beanName : this.manualSingletonNames) {
 			try {
 				// In case of FactoryBean, match object created by FactoryBean.
@@ -947,7 +947,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				if (isFactoryBean(beanName)) {
 					// 获取FactoryBean对象
-					// 容器初始化创建非懒加载单例bean的时候如果当前遍历到的bean是factoryBean则会用&xxx去getBean，拿到的是FactoryBean实例对象
+					// 容器初始化创建非懒加载单例bean的时候如果当前遍历到的bean是factoryBean则会先用&xxx去getBean，拿到的是FactoryBean实例对象
 					// 除非当前bean实现的是SmartFactoryBean,且实现的方法isEagerInit返回true，那么它就会在容器初始化的时候继续拿xxx去getBean，此时拿的是getObject
 					// 否则就只能在下次getBean("xxx")的时候才能拿到getObject
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
@@ -1642,6 +1642,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		Map<String, Object> result = CollectionUtils.newLinkedHashMap(candidateNames.length);
 
 		// 根据类型从resolvableDependencies中匹配Bean，resolvableDependencies中存放的是类型：Bean对象，比如BeanFactory.class:BeanFactory对象，在Spring启动时设置
+		// 好像是在fresh的prepareFactory方法中设置的
 		for (Map.Entry<Class<?>, Object> classObjectEntry : this.resolvableDependencies.entrySet()) {
 			Class<?> autowiringType = classObjectEntry.getKey();
 			if (autowiringType.isAssignableFrom(requiredType)) {

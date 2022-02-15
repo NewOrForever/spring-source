@@ -57,10 +57,12 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 		// 从ProxyFactory中拿到所设置的Advice（添加时被封装成了DefaultPointcutAdvisor）
 		// 添加的时候会控制顺序
 		Advisor[] advisors = config.getAdvisors();
+		// interceptor
 		List<Object> interceptorList = new ArrayList<>(advisors.length);
 		Class<?> actualClass = (targetClass != null ? targetClass : method.getDeclaringClass());
 		Boolean hasIntroductions = null;
 
+		// 遍历ProxyFactory中的advisors
 		for (Advisor advisor : advisors) {
 			if (advisor instanceof PointcutAdvisor) {
 				// Add it conditionally.
@@ -78,20 +80,26 @@ public class DefaultAdvisorChainFactory implements AdvisorChainFactory, Serializ
 						match = ((IntroductionAwareMethodMatcher) mm).matches(method, actualClass, hasIntroductions);
 					}
 					else {
+						// 执行Pointcut中MethodMatcher的matches方法来进行匹配当前的方法
 						match = mm.matches(method, actualClass);
 					}
 
 					if (match) {
 						// 如果匹配则将Advisor封装成为Interceptor，当前Advisor中的Advice可能即是MethodBeforeAdvice，也是ThrowsAdvice
+						// advice instance of MethodInterceptor则直接添加
+						// 其他的通过before、after returnning、throws这几个适配器适配成相应的MethodInterceptor
 						MethodInterceptor[] interceptors = registry.getInterceptors(advisor);
 						if (mm.isRuntime()) {
 							// Creating a new object instance in the getInterceptors() method
 							// isn't a problem as we normally cache created chains.
+							// 如果Pointcut中MethodMatcher的isRuntime方法返回的是true，那么就把这个advisor封装成InterceptorAndDynamicMethodMatcher
+							// 在后面执行代理逻辑的时候还要最终去拿MethodMatcher的有参数的matches方法进行匹配，匹配则执行代理逻辑不匹配则执行method
 							for (MethodInterceptor interceptor : interceptors) {
 								interceptorList.add(new InterceptorAndDynamicMethodMatcher(interceptor, mm));
 							}
 						}
 						else {
+							// 直接添加到链路
 							interceptorList.addAll(Arrays.asList(interceptors));
 						}
 					}

@@ -81,6 +81,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	private static final Log logger = LogFactory.getLog(JdkDynamicAopProxy.class);
 
 	/** Config used to configure this proxy. */
+	// 实际就是ProxyFactory
 	private final AdvisedSupport advised;
 
 	private final Class<?>[] proxiedInterfaces;
@@ -161,6 +162,9 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 	@Override
 	@Nullable
 	public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+		// target的method是否需要去执行代理逻辑，有匹配的advisor则去执行代理逻辑
+		// 没有的话则直接执行method
+
 		Object oldProxy = null;
 		boolean setProxyContext = false;
 
@@ -208,6 +212,8 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 			// Get the interception chain for this method.
 			// 代理对象在执行某个方法时，根据方法筛选出匹配的Advisor,并适配成Interceptor
+			// advisor -> MethodInterceptor
+			// advice的一个链路
 			List<Object> chain = this.advised.getInterceptorsAndDynamicInterceptionAdvice(method, targetClass);
 
 			// Check whether we have any advice. If we don't, we can fallback on direct

@@ -235,9 +235,16 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		return null;
 	}
 
+	/**
+	 * 用于循环依赖三级缓存存入的一个lamda表达式中执行
+	 * @param bean the raw bean instance
+	 * @param beanName the name of the bean
+	 * @return
+	 */
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
+		// 添加到缓存说明已经进行过aop -> 初始化后的方法中会根据该属性来判断有没有aop过
 		this.earlyProxyReferences.put(cacheKey, bean);
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
@@ -289,7 +296,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			// 没有aop过（不是循环依赖）
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				// 进行aop
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
@@ -335,7 +344,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			return bean;
 		}
 
-		// 当前正在创建的Bean不用进行AOP，比如切面Bean
+		// 当前正在创建的Bean不用进行AOP，比如切面Bean（@Aspect）、Advice、Advisor、Pointcut、AopInfrastructureBean
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
@@ -526,6 +535,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	protected Advisor[] buildAdvisors(@Nullable String beanName, @Nullable Object[] specificInterceptors) {
 		// Handle prototypes correctly...
+		// setInterceptorNames("interceptorBeanName");
 		Advisor[] commonInterceptors = resolveInterceptorNames();
 
 		List<Object> allInterceptors = new ArrayList<>();
@@ -553,6 +563,8 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// 适配统一得到Advisor
 		Advisor[] advisors = new Advisor[allInterceptors.size()];
 		for (int i = 0; i < allInterceptors.size(); i++) {
+			// advisor is advisor
+			// advice -> DefaultPointcutAdvisor
 			advisors[i] = this.advisorAdapterRegistry.wrap(allInterceptors.get(i));
 		}
 		return advisors;

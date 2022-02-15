@@ -164,6 +164,10 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				currentlyInvokedFactoryMethod.set(factoryMethod);
 				// factoryBean就是AppConfig的代理对象（如果加了@Configuration）
 				// factoryMethod就是@Bean修饰的方法
+				/**
+				 * 当factoryMethod是static方法时，factoryBean为空，可以直接执行staticMethod.invoke(null, args)方法
+				 * 当factoryMethod不是static方法时，factoryBean不为空（如果加了@Configuration注解则该对象是AppConfig的代理对象）
+				 */
 				Object result = factoryMethod.invoke(factoryBean, args);
 				if (result == null) {
 					result = new NullBean();

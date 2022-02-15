@@ -272,7 +272,7 @@ public class DependencyDescriptor extends InjectionPoint implements Serializable
 	 */
 	public Object resolveCandidate(String beanName, Class<?> requiredType, BeanFactory beanFactory)
 			throws BeansException {
-
+		// FactoryBean的话拿的就是getObject()方法返回的对象
 		return beanFactory.getBean(beanName);
 	}
 

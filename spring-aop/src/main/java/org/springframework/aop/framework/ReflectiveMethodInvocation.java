@@ -162,6 +162,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		// We start with an index of -1 and increment early.
 		// currentInterceptorIndex初始值为-1，每调用一个interceptor就会加1
 		// 当调用完了最后一个interceptor后就会执行被代理方法
+		// interceptorsAndDynamicMethodMatchers这个就是匹配的advisors
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
 			return invokeJoinpoint();
 		}
@@ -175,10 +176,13 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
+			// 找匹配的advisor的时候会，如果MethodMatcher的isRuntime返回true则返回的就是InterceptorAndDynamicMethodMatcher
+			// 需要最终在这里再去调用有参数的matches方法来匹配
 			InterceptorAndDynamicMethodMatcher dm =
 					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
 			Class<?> targetClass = (this.targetClass != null ? this.targetClass : this.method.getDeclaringClass());
 			// 动态匹配，根据方法参数匹配
+			// 匹配通过执行代理逻辑
 			if (dm.methodMatcher.matches(this.method, targetClass, this.arguments)) {
 				return dm.interceptor.invoke(this);
 			}
@@ -193,7 +197,7 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
-			// 直接调用MethodInterceptor，传入this，在内部会再次调用proceed()方法进行递归
+			// 直接调用MethodInterceptor，传入this，在内部会再次调用proceed()方法进行递归（责任链模式）
 			// 比如MethodBeforeAdviceInterceptor
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}

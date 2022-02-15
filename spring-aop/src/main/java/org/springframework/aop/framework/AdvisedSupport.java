@@ -81,6 +81,7 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	AdvisorChainFactory advisorChainFactory = new DefaultAdvisorChainFactory();
 
 	/** Cache with Method as key and advisor chain List as value. */
+	// method -> advisor chain
 	private transient Map<MethodCacheKey, List<Object>> methodCache;
 
 	/**
@@ -465,12 +466,14 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 	 */
 	public List<Object> getInterceptorsAndDynamicInterceptionAdvice(Method method, @Nullable Class<?> targetClass) {
 		// 代理对象在执行某个方法时，会根据当前ProxyFactory中所设置的Advisor根据当前Method再次进行过滤
+		// bean初始化后需要去aop -> 判断当前的bean有没有匹配的advisor，有则要去进行aop（在这里已经匹配一次）->  构建ProxyFactory  -> 执行ProxyFactory底层逻辑
 
 		MethodCacheKey cacheKey = new MethodCacheKey(method);
 
 		// 注意这个List，表示的就是Advice链
 		List<Object> cached = this.methodCache.get(cacheKey);
 		if (cached == null) {
+			// 找匹配的advisor
 			cached = this.advisorChainFactory.getInterceptorsAndDynamicInterceptionAdvice(
 					this, method, targetClass);
 			this.methodCache.put(cacheKey, cached);

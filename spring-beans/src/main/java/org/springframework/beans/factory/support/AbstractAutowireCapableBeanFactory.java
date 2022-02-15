@@ -1610,6 +1610,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Set<String> result = new TreeSet<>();
 		PropertyValues pvs = mbd.getPropertyValues();
 		// 当前bean的属性描述器，bean有set方法或者get方法时能获取到
+		// 能拿到父类的set或get方法，这样Object的getClass方法就肯定是能拿到的
 		PropertyDescriptor[] pds = bw.getPropertyDescriptors();
 
 		// 什么样的属性能进行自动注入？

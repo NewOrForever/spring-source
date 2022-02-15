@@ -440,10 +440,20 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		return (T) bean;
 	}
 
+	/**
+	 * 根据name能否找到bean
+	 * bean? 普通bean或者FactoryBean
+	 * xxx进来找的就是普通bean
+	 * &xxx进来找的就是FactoryBean
+	 * @param name the name of the bean to query
+	 * @return
+	 */
 	@Override
 	public boolean containsBean(String name) {
 		String beanName = transformedBeanName(name);
 		if (containsSingleton(beanName) || containsBeanDefinition(beanName)) {
+			// xxx进来
+			// &xxx进来是FactoryBean
 			return (!BeanFactoryUtils.isFactoryDereference(name) || isFactoryBean(name));
 		}
 		// Not found -> check parent.
@@ -573,11 +583,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					return (type != null && typeToMatch.isAssignableFrom(type));
 				}
 				else {
+					// FactoryBean先用xxx类型匹配getObjectType，不匹配则再用&xxx进来匹配
 					// &xxx
 					return typeToMatch.isInstance(beanInstance);
 				}
 			}
 			// 不是FactoryBean，就是普通Bean
+			// xxx
 			else if (!isFactoryDereference) {
 				// 直接匹配
 				if (typeToMatch.isInstance(beanInstance)) {
@@ -641,12 +653,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// We're looking for a regular reference but we're a factory bean that has
 		// a decorated bean definition. The target bean should be the same type
 		// as FactoryBean would ultimately return. 啃
+		// xxx && 是FactoryBean
 		if (!isFactoryDereference && dbd != null && isFactoryBean(beanName, mbd)) {
 			// We should only attempt if the user explicitly set lazy-init to true
 			// and we know the merged bean definition is for a factory bean.
 			if (!mbd.isLazyInit() || allowFactoryBeanInit) {
 				RootBeanDefinition tbd = getMergedBeanDefinition(dbd.getBeanName(), dbd.getBeanDefinition(), mbd);
 				// getObjectType所方法的类型
+				// 推断beandefinition的类型
 				Class<?> targetType = predictBeanType(dbd.getBeanName(), tbd, typesToMatch);
 				if (targetType != null && !FactoryBean.class.isAssignableFrom(targetType)) {
 					predictedType = targetType;
@@ -727,6 +741,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object beanInstance = getSingleton(beanName, false);
 		if (beanInstance != null && beanInstance.getClass() != NullBean.class) {
 			if (beanInstance instanceof FactoryBean && !BeanFactoryUtils.isFactoryDereference(name)) {
+				// FactoryBean拿getObjectType方法返回的类型
 				return getTypeForFactoryBean((FactoryBean<?>) beanInstance);
 			}
 			else {

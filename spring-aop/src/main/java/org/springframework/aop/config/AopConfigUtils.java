@@ -122,9 +122,19 @@ public abstract class AopConfigUtils {
 
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
+			/**
+			 * 	static {
+			 * 		// Set up the escalation list...
+			 * 		APC_PRIORITY_LIST.add(InfrastructureAdvisorAutoProxyCreator.class);
+			 * 		APC_PRIORITY_LIST.add(AspectJAwareAdvisorAutoProxyCreator.class);
+			 * 		APC_PRIORITY_LIST.add(AnnotationAwareAspectJAutoProxyCreator.class);
+			 *        }
+			 */
+			// 可能已经创建了另外两个中的一个
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
 				int requiredPriority = findPriorityForClass(cls);
+				// 比较list的下标，用小的
 				if (currentPriority < requiredPriority) {
 					apcDefinition.setBeanClassName(cls.getName());
 				}
@@ -132,6 +142,7 @@ public abstract class AopConfigUtils {
 			return null;
 		}
 
+		// 注册AnnotationAwareAspectJAutoProxyCreator这个beandefinition
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
 		beanDefinition.setSource(source);
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);

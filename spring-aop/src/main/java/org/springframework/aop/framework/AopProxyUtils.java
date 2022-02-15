@@ -126,6 +126,7 @@ public abstract class AopProxyUtils {
 	 */
 	static Class<?>[] completeProxiedInterfaces(AdvisedSupport advised, boolean decoratingProxy) {
 		// 被代理对象自己所实现的接口
+		// 需要addInterfaces添加进来
 		Class<?>[] specifiedInterfaces = advised.getProxiedInterfaces();
 
 		// 如果被代理对象没有实现接口，则判断被代理类是不是接口，或者被代理类是不是已经经过JDK动态代理之后的类从而获取想对应的接口
@@ -133,9 +134,11 @@ public abstract class AopProxyUtils {
 			// No user-specified interfaces: check whether target class is an interface.
 			Class<?> targetClass = advised.getTargetClass();
 			if (targetClass != null) {
+				// target是接口则setInterfaces
 				if (targetClass.isInterface()) {
 					advised.setInterfaces(targetClass);
 				}
+				// target已经经过jdk动态代理
 				else if (Proxy.isProxyClass(targetClass)) {
 					advised.setInterfaces(targetClass.getInterfaces());
 				}

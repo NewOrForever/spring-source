@@ -50,6 +50,7 @@ public class ProxyFactory extends ProxyCreatorSupport {
 		// 设置被代理对象
 		setTarget(target);
 		// 设置被代理对象所实现的所有接口
+		// 底层用了addInterface方法
 		setInterfaces(ClassUtils.getAllInterfaces(target));
 	}
 
