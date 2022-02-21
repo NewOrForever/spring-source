@@ -82,6 +82,7 @@ public abstract class AbstractFallbackTransactionAttributeSource
 	 * <p>As this base class is not marked Serializable, the cache will be recreated
 	 * after serialization - provided that the concrete subclass is Serializable.
 	 */
+	// 子类序列化后这个cache将会重新创建
 	private final Map<Object, TransactionAttribute> attributeCache = new ConcurrentHashMap<>(1024);
 
 
@@ -107,7 +108,7 @@ public abstract class AbstractFallbackTransactionAttributeSource
 		}
 
 		// First, see if we have a cached value.
-		// 检查缓存里的结果，缓存里存了当前类和方法是否存在Transactional注解
+		// 检查缓存里的结果，缓存里存了当前类和方法是否存在@Transactional注解
 		Object cacheKey = getCacheKey(method, targetClass);
 		TransactionAttribute cached = this.attributeCache.get(cacheKey);
 		if (cached != null) {
@@ -123,16 +124,20 @@ public abstract class AbstractFallbackTransactionAttributeSource
 		else {
 			// We need to work it out.
 			// 解析，并缓存结果
+			// 解析有@Transactional注解的方法或类拿到注解属性封装到RuleBasedTransactionAttribute对象
 			TransactionAttribute txAttr = computeTransactionAttribute(method, targetClass);
 			// Put it in the cache.
-			if (txAttr == null) {
+			if (txAttr == null) { // 没有@Transactional注解
 				this.attributeCache.put(cacheKey, NULL_TRANSACTION_ATTRIBUTE);
 			}
 			else {
+				// 方法全名
 				String methodIdentification = ClassUtils.getQualifiedMethodName(method, targetClass);
+				// RuleBasedTransactionAttribute extends DefaultTransactionAttribute
 				if (txAttr instanceof DefaultTransactionAttribute) {
 					DefaultTransactionAttribute dta = (DefaultTransactionAttribute) txAttr;
 					dta.setDescriptor(methodIdentification);
+					// 占位符解析器
 					dta.resolveAttributeStrings(this.embeddedValueResolver);
 				}
 				if (logger.isTraceEnabled()) {
@@ -165,7 +170,10 @@ public abstract class AbstractFallbackTransactionAttributeSource
 	 */
 	@Nullable
 	protected TransactionAttribute computeTransactionAttribute(Method method, @Nullable Class<?> targetClass) {
+		// 这里不缓存，在上面一层调用该方法的那个方法中缓存，key是由method和targetClass组成的MethodClassKey
+
 		// Don't allow no-public methods as required.
+		// allowPublicMethodsOnly在AnnotationTransactionAttributeSource无参构造方法中设置为true
 		if (allowPublicMethodsOnly() && !Modifier.isPublic(method.getModifiers())) {
 			return null;
 		}
@@ -176,6 +184,7 @@ public abstract class AbstractFallbackTransactionAttributeSource
 
 		// First try is the method in the target class.
 		// 先检查方法上是否存在@Transactional
+		// RuleBasedTransactionAttribute
 		TransactionAttribute txAttr = findTransactionAttribute(specificMethod);
 		if (txAttr != null) {
 			return txAttr;
@@ -188,6 +197,7 @@ public abstract class AbstractFallbackTransactionAttributeSource
 			return txAttr;
 		}
 
+		// 第一次找的是桥接方法？为啥不直接找到原始方法？拿不到？依赖注入找注入点不就直接找到了原始方法？
 		if (specificMethod != method) {
 			// Fallback is to look at the original method.
 			txAttr = findTransactionAttribute(method);

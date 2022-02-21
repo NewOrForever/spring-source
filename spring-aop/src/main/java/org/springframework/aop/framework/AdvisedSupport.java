@@ -471,6 +471,9 @@ public class AdvisedSupport extends ProxyConfig implements Advised {
 		MethodCacheKey cacheKey = new MethodCacheKey(method);
 
 		// 注意这个List，表示的就是Advice链
+		// methodCaceh 存的是 method -> advice chain
+		// UserService代理对象第一次执行test()方法时，这个缓存时空的需要去找匹配的advice chain并存入缓存
+		// 第二次调用test()方法时就可以直接拿缓存中的数据了
 		List<Object> cached = this.methodCache.get(cacheKey);
 		if (cached == null) {
 			// 找匹配的advisor

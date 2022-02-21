@@ -16,8 +16,10 @@
 
 package org.springframework.transaction.interceptor;
 
+import org.springframework.aop.Advisor;
 import org.springframework.aop.ClassFilter;
 import org.springframework.aop.Pointcut;
+import org.springframework.aop.PointcutAdvisor;
 import org.springframework.aop.support.AbstractBeanFactoryPointcutAdvisor;
 import org.springframework.lang.Nullable;
 
@@ -33,10 +35,20 @@ import org.springframework.lang.Nullable;
  */
 @SuppressWarnings("serial")
 public class BeanFactoryTransactionAttributeSourceAdvisor extends AbstractBeanFactoryPointcutAdvisor {
+	// @Bean定义的非懒加载单例advisor bean，它的属性也就确定了，属性的属性不也是确定的么
+	// 匹配advisor的时候getPointcut().getClassFilter().matches(clazz) -> methodMatcher.matches(method)
 
+
+	// @Bean中set进来的
+	// AnnotationTransactionAttributeSource
 	@Nullable
 	private TransactionAttributeSource transactionAttributeSource;
 
+	// 无参构造方法中会setClassFilter - TransactionAttributeSourceClassFilter
+	// TransactionalProxy
+	// TransactionManager
+	// PersistenceExceptionTranslator
+	// 还有jdk中的一些简单类会被过滤调不需要aop
 	private final TransactionAttributeSourcePointcut pointcut = new TransactionAttributeSourcePointcut() {
 		@Override
 		@Nullable

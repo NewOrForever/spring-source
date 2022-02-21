@@ -240,10 +240,14 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 	@Override
 	protected Object doGetTransaction() {
+		// 每次进来都会新建一个txObject
 		DataSourceTransactionObject txObject = new DataSourceTransactionObject();
 		txObject.setSavepointAllowed(isNestedTransactionAllowed());
+		// 拿到一个数据库连接
 		ConnectionHolder conHolder =
 				(ConnectionHolder) TransactionSynchronizationManager.getResource(obtainDataSource());
+		// 为啥要给newConnectionHolder设置为false？
+		// 因为这里的数据库连接都是从resources这个ThreadLocal中取的，不管resources中有没有，这个数据库连接都不是新建的，所以设置为false
 		txObject.setConnectionHolder(conHolder, false);
 		return txObject;
 	}
@@ -256,6 +260,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 
 	@Override
 	protected void doBegin(Object transaction, TransactionDefinition definition) {
+		// 保存了ConnectionHolder
 		DataSourceTransactionObject txObject = (DataSourceTransactionObject) transaction;
 		Connection con = null;
 
@@ -264,14 +269,17 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 			// 如果当前线程中所使用的DataSource还没有创建过数据库连接，就获取一个新的数据库连接
 			if (!txObject.hasConnectionHolder() ||
 					txObject.getConnectionHolder().isSynchronizedWithTransaction()) {
+				// 拿到一个新的数据库连接
 				Connection newCon = obtainDataSource().getConnection();
 				if (logger.isDebugEnabled()) {
 					logger.debug("Acquired Connection [" + newCon + "] for JDBC transaction");
 				}
+				// 这里就要给newConnectionHolder属性设置为true了，新建的数据库连接嘛
 				txObject.setConnectionHolder(new ConnectionHolder(newCon), true);
 			}
 
 			txObject.getConnectionHolder().setSynchronizedWithTransaction(true);
+			// 这里拿到了actual conn
 			con = txObject.getConnectionHolder().getConnection();
 
 			// 根据@Transactional注解中的设置，设置Connection的readOnly与隔离级别
@@ -291,6 +299,7 @@ public class DataSourceTransactionManager extends AbstractPlatformTransactionMan
 				con.setAutoCommit(false);
 			}
 
+			// 设置数据库事务只读
 			prepareTransactionalConnection(con, definition);
 			txObject.getConnectionHolder().setTransactionActive(true);
 

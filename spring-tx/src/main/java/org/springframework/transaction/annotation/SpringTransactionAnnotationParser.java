@@ -51,9 +51,13 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 	@Override
 	@Nullable
 	public TransactionAttribute parseTransactionAnnotation(AnnotatedElement element) {
+		// 解析@Transactional注解，最后把注解的属性封装到RuleBasedTransactionAttribute对象中
+
+		// 拿到element上的@Transactional注解的属性
 		AnnotationAttributes attributes = AnnotatedElementUtils.findMergedAnnotationAttributes(
 				element, Transactional.class, false, false);
 		if (attributes != null) {
+			// 构建的是RuleBasedTransactionAttribute
 			return parseTransactionAnnotation(attributes);
 		}
 		else {
@@ -66,6 +70,7 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 	}
 
 	protected TransactionAttribute parseTransactionAnnotation(AnnotationAttributes attributes) {
+		// 构建一个RuleBasedTransactionAttribute extends DefaultTransactionAttribute
 		RuleBasedTransactionAttribute rbta = new RuleBasedTransactionAttribute();
 
 		Propagation propagation = attributes.getEnum("propagation");
@@ -80,9 +85,12 @@ public class SpringTransactionAnnotationParser implements TransactionAnnotationP
 		rbta.setTimeoutString(timeoutString);
 
 		rbta.setReadOnly(attributes.getBoolean("readOnly"));
+		// @Transactional中的value属性，可以理解为一个@Qulifier注解，那它来去匹配TransactionManager
 		rbta.setQualifier(attributes.getString("value"));
 		rbta.setLabels(Arrays.asList(attributes.getStringArray("label")));
 
+		// 封装rollback的一些信息
+		// 哪些异常需要回滚，哪些异常不需要回滚
 		List<RollbackRuleAttribute> rollbackRules = new ArrayList<>();
 		for (Class<?> rbRule : attributes.getClassArray("rollbackFor")) {
 			rollbackRules.add(new RollbackRuleAttribute(rbRule));

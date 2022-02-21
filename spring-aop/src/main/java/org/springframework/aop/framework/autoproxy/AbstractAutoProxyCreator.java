@@ -296,7 +296,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
-			// 没有aop过（不是循环依赖）
+			// 没有aop过（不是循环依赖 - getEarlyBeanReference()方法）
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
 				// 进行aop
 				return wrapIfNecessary(bean, beanName, cacheKey);
@@ -335,6 +335,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 * @return a proxy wrapping the bean, or the raw bean instance as-is
 	 */
 	protected Object wrapIfNecessary(Object bean, String beanName, Object cacheKey) {
+		// targetSourcedBeans在初始化前中添加（BeanNameAutoProxyCreator用来记录哪些bean已经在初始化前aop过了）
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
@@ -353,6 +354,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		// Create proxy if we have advice.
 		// 判断当前bean是否存在匹配的advice，如果存在则要生成一个代理对象
 		// 此处根据类以及类中的方法去匹配到Interceptor（也就是Advice），然后生成代理对象，代理对象在执行的时候，还会根据当前执行的方法去匹配
+		// 也就是说ProxyFactory自己底层也是会去匹配一遍的
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			// advisedBeans记录了某个Bean已经进行过AOP了
@@ -457,11 +459,16 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		}
 
 		ProxyFactory proxyFactory = new ProxyFactory();
+		// this就是通过注解注册进来的AnnotationAwareAspectJAutoProxyCreator这个bean
+		// ProxyFactory和这个类是有相同的父类ProxyConfig的
+		// AnnotationAwareAspectJAutoProxyCreator这个bean在注册进来的时候就将注解的属性注如到beandefinition的pvs了，exposeProxy就是
 		proxyFactory.copyFrom(this);
+
+		// 这里一些属性的设置是能决定最后是要jdk动态代理还是cglib动态代理
 
 		if (proxyFactory.isProxyTargetClass()) {
 			// Explicit handling of JDK proxy targets (for introduction advice scenarios)
-			if (Proxy.isProxyClass(beanClass)) {
+			if (Proxy.isProxyClass(beanClass)) {	// 是否是jdk动态代理类
 				// Must allow for introductions; can't just set interfaces to the proxy's interfaces only.
 				for (Class<?> ifc : beanClass.getInterfaces()) {
 					proxyFactory.addInterface(ifc);
@@ -478,6 +485,9 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 			}
 		}
 
+		// 切面类中的解析得到的advisor是InstantiationModelAwarePointcutAdvisorImpl
+		// specificInterceptors + common interceptors
+		// advisor -> advisor，advice -> DefaultPointcutAdvisor
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
 		// 在这一步会去判断advisors中是否存在IntroductionAdvisor，如果存在则会把对应的interface添加到proxyFactory中去
 		proxyFactory.addAdvisors(advisors);
@@ -536,6 +546,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	protected Advisor[] buildAdvisors(@Nullable String beanName, @Nullable Object[] specificInterceptors) {
 		// Handle prototypes correctly...
 		// setInterceptorNames("interceptorBeanName");
+		// 我写了个BeanFactoryPostProcessor给beandefinition添加了interceptorNames的属性值
 		Advisor[] commonInterceptors = resolveInterceptorNames();
 
 		List<Object> allInterceptors = new ArrayList<>();

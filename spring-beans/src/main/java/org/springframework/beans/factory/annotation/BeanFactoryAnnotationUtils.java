@@ -92,6 +92,7 @@ public abstract class BeanFactoryAnnotationUtils {
 
 		if (beanFactory instanceof ListableBeanFactory) {
 			// Full qualifier matching supported.
+			// beantype -> candidateBeanNames -> beanName匹配qualifier -> beanName别名匹配qualifier -> @Quafilier注解value值匹配qualifier
 			return qualifiedBeanOfType((ListableBeanFactory) beanFactory, beanType, qualifier);
 		}
 		else if (beanFactory.containsBean(qualifier)) {
@@ -156,12 +157,14 @@ public abstract class BeanFactoryAnnotationUtils {
 			return true;
 		}
 		if (beanFactory != null) {
+			// qualifier匹配别名
 			for (String alias : beanFactory.getAliases(beanName)) {
 				if (qualifier.test(alias)) {
 					return true;
 				}
 			}
 			try {
+				// 匹配@Qulifier注解的值
 				Class<?> beanType = beanFactory.getType(beanName);
 				if (beanFactory instanceof ConfigurableBeanFactory) {
 					BeanDefinition bd = ((ConfigurableBeanFactory) beanFactory).getMergedBeanDefinition(beanName);

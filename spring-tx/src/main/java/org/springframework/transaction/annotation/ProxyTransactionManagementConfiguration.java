@@ -35,7 +35,7 @@ import org.springframework.transaction.interceptor.TransactionInterceptor;
  * @see EnableTransactionManagement
  * @see TransactionManagementConfigurationSelector
  */
-@Configuration(proxyBeanMethods = false)
+@Configuration(proxyBeanMethods = false) // lite  do not enhance configuration
 @Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class ProxyTransactionManagementConfiguration extends AbstractTransactionManagementConfiguration {
 
@@ -45,18 +45,24 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 			TransactionAttributeSource transactionAttributeSource, TransactionInterceptor transactionInterceptor) {
 
 		BeanFactoryTransactionAttributeSourceAdvisor advisor = new BeanFactoryTransactionAttributeSourceAdvisor();
+		// 解析@Transactional注解
 		advisor.setTransactionAttributeSource(transactionAttributeSource);
+		// 代理逻辑
 		advisor.setAdvice(transactionInterceptor);
+		// 实现的ImportAware中的方法会去给enableTx属性赋值
 		if (this.enableTx != null) {
+			// @EnableTransactionManagement注解中的属性
 			advisor.setOrder(this.enableTx.<Integer>getNumber("order"));
 		}
+
+		// 这个advisor中维护了一个Pointcut - TransactionAttributeSourcePointcut
 		return advisor;
 	}
 
 	@Bean
 	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public TransactionAttributeSource transactionAttributeSource() {
-		// AnnotationTransactionAttributeSource中定义了一个Pointcut
+
 		// 并且AnnotationTransactionAttributeSource可以用来解析@Transactional注解，并得到一个RuleBasedTransactionAttribute对象
 		return new AnnotationTransactionAttributeSource();
 	}
@@ -66,6 +72,7 @@ public class ProxyTransactionManagementConfiguration extends AbstractTransaction
 	public TransactionInterceptor transactionInterceptor(TransactionAttributeSource transactionAttributeSource) {
 		TransactionInterceptor interceptor = new TransactionInterceptor();
 		interceptor.setTransactionAttributeSource(transactionAttributeSource);
+		// 刚开始进来事务管理器这个属性是空的
 		if (this.txManager != null) {
 			interceptor.setTransactionManager(this.txManager);
 		}

@@ -109,6 +109,7 @@ public class BeanFactoryAspectJAdvisorsBuilder {
 						}
 						// 是否是Aspect（有没有@Aspect注解且不是acj编译器）
 						if (this.advisorFactory.isAspect(beanType)) {
+							// 是切面bean则添加
 							aspectNames.add(beanName);
 							// 切面的注解信息
 							AspectMetadata amd = new AspectMetadata(beanType, beanName);

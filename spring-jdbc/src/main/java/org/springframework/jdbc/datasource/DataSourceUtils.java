@@ -210,6 +210,7 @@ public abstract class DataSourceUtils {
 				logger.debug("Changing isolation level of JDBC Connection [" + con + "] to " +
 						definition.getIsolationLevel());
 			}
+			// 获取当前数据库连接的隔离级别，如果和@Transactional中设置的不一致则注解中的属性覆盖当前隔离级别
 			int currentIsolation = con.getTransactionIsolation();
 			if (currentIsolation != definition.getIsolationLevel()) {
 				previousIsolationLevel = currentIsolation;

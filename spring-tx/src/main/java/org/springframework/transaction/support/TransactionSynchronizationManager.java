@@ -137,6 +137,7 @@ public abstract class TransactionSynchronizationManager {
 	 */
 	@Nullable
 	public static Object getResource(Object key) {
+		// 从ThreadLocal<Map>中根据datasource这个key拿数据库连接
 		Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
 		return doGetResource(actualKey);
 	}
@@ -225,6 +226,8 @@ public abstract class TransactionSynchronizationManager {
 	 */
 	@Nullable
 	private static Object doUnbindResource(Object actualKey) {
+		// resources清除并返回当前的数据库连接
+
 		Map<Object, Object> map = resources.get();
 		if (map == null) {
 			return null;

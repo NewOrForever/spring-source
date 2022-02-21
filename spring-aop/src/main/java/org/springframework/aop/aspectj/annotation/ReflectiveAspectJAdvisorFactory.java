@@ -140,6 +140,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 		List<Advisor> advisors = new ArrayList<>();
 		// 获取切面类中没有加@Pointcut的方法，进行遍历生成Advisor
+		// 这里会对方法进行排序around > before ...
 		for (Method method : getAdvisorMethods(aspectClass)) {
 			// Prior to Spring Framework 5.2.7, advisors.size() was supplied as the declarationOrderInAspect
 			// to getAdvisor(...) to represent the "current position" in the declared methods list.

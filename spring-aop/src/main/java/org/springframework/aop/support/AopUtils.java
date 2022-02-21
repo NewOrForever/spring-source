@@ -252,7 +252,7 @@ public abstract class AopUtils {
 			for (Method method : methods) {
 				if (introductionAwareMethodMatcher != null ?
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
-						// 在判断方法是否匹配
+						// 再判断方法是否匹配
 						methodMatcher.matches(method, targetClass)) {
 					return true;
 				}
@@ -310,6 +310,7 @@ public abstract class AopUtils {
 		if (candidateAdvisors.isEmpty()) {
 			return candidateAdvisors;
 		}
+		// 合格的advisors
 		List<Advisor> eligibleAdvisors = new ArrayList<>();
 		for (Advisor candidate : candidateAdvisors) {
 			if (candidate instanceof IntroductionAdvisor && canApply(candidate, clazz)) {

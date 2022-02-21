@@ -37,13 +37,26 @@ import org.springframework.util.ObjectUtils;
 abstract class TransactionAttributeSourcePointcut extends StaticMethodMatcherPointcut implements Serializable {
 
 	protected TransactionAttributeSourcePointcut() {
+		// 类型匹配
 		setClassFilter(new TransactionAttributeSourceClassFilter());
 	}
 
 
+	/**
+	 * 方法匹配器的matches方法， ClassFilter通过之后 -> methodMatcher.matches -> 找method或targetClass有没有@Transactional注解（targetClass有的话每个method都是要去事务的）
+	 * -> 有的话将注解的属性封装到RuleBasedTransactionAttribute对象中 -> 缓存（key是MethodClassKey，如果没有该注解，也是会缓存的只不过缓存的是个空对象，这样下次也就不用再找了么）
+	 * 再匹配方法的时候就会去找@Transactional注解并解析，并把解析结果封装最后缓存起来
+	 * attributeCache属性虽然是抽象方法私有的，但是可以理解为子类AnnotationTransactionAttributeSource的属性，因为该类已经定义为非懒加载单例bean，所以
+	 * 该属性也就可以认为确定下来了，下次就直接可以拿来用了
+	 * @param method the candidate method
+	 * @param targetClass the target class
+	 * @return
+	 */
 	@Override
 	public boolean matches(Method method, Class<?> targetClass) {
 		TransactionAttributeSource tas = getTransactionAttributeSource();
+		// AnnotationTransactionAttributeSource extends AbstractFallbackTransactionAttributeSource
+		// method或targetClass上有没有@Transactional注解
 		return (tas == null || tas.getTransactionAttribute(method, targetClass) != null);
 	}
 

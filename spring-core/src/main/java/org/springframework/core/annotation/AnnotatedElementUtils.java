@@ -561,7 +561,9 @@ public abstract class AnnotatedElementUtils {
 	@Nullable
 	public static AnnotationAttributes findMergedAnnotationAttributes(AnnotatedElement element,
 			Class<? extends Annotation> annotationType, boolean classValuesAsString, boolean nestedAnnotationsAsMap) {
-
+		// AnnotatedElement是jdk的一个接口，看看他的实现类，Class、Method、Field等
+		// findAnnotations：拿到element上的所有注解
+		// 拿到某一个注解的属性
 		MergedAnnotation<?> mergedAnnotation = findAnnotations(element)
 				.get(annotationType, null, MergedAnnotationSelectors.firstDirectlyDeclared());
 		return getAnnotationAttributes(mergedAnnotation, classValuesAsString, nestedAnnotationsAsMap);

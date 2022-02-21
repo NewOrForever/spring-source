@@ -78,6 +78,8 @@ public class DefaultAdvisorAdapterRegistry implements AdvisorAdapterRegistry, Se
 	@Override
 	public MethodInterceptor[] getInterceptors(Advisor advisor) throws UnknownAdviceTypeException {
 		List<MethodInterceptor> interceptors = new ArrayList<>(3);
+		// 从advisor中拿advice
+		// 切面bean中的是advisor是InstantiationModelAwarePointcutAdvisorImpl
 		Advice advice = advisor.getAdvice();
 		if (advice instanceof MethodInterceptor) {
 			// MethodInterceptor

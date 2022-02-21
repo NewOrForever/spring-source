@@ -44,6 +44,7 @@ import org.springframework.util.CollectionUtils;
 @Configuration
 public abstract class AbstractTransactionManagementConfiguration implements ImportAware {
 
+	// @EnableTransactionManagement注解的属性
 	@Nullable
 	protected AnnotationAttributes enableTx;
 
@@ -54,6 +55,12 @@ public abstract class AbstractTransactionManagementConfiguration implements Impo
 	protected TransactionManager txManager;
 
 
+	/**
+	 * ImportAwareBeanPostProcessor
+	 * @param importMetadata - AppConfig
+	 *	如果AppConfig这个配置类没有@EnableTransactionManagement这个注解则会报错
+	 *	所以我一开始不是想要@EnableAspectJAutoProxy + @Import(ProxyTransactionManagementCOnfiguration.class)嘛，这样是没法用的
+	 */
 	@Override
 	public void setImportMetadata(AnnotationMetadata importMetadata) {
 		this.enableTx = AnnotationAttributes.fromMap(
