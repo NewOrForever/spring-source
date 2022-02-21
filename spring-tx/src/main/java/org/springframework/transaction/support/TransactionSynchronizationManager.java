@@ -311,6 +311,7 @@ public abstract class TransactionSynchronizationManager {
 		}
 		else {
 			// Sort lazily here, not in registerSynchronization.
+			// 在这里进行排序
 			List<TransactionSynchronization> sortedSynchs = new ArrayList<>(synchs);
 			OrderComparator.sort(sortedSynchs);
 			return Collections.unmodifiableList(sortedSynchs);

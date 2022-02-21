@@ -96,6 +96,7 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 	/**
 	 * Mark this transaction as completed, that is, committed or rolled back.
 	 */
+	// 事务完成（提交或回滚完成）的标记
 	public void setCompleted() {
 		this.completed = true;
 	}
@@ -150,6 +151,8 @@ public abstract class AbstractTransactionStatus implements TransactionStatus {
 			throw new TransactionUsageException(
 					"Cannot roll back to savepoint - no savepoint associated with current transaction");
 		}
+		// DataSourceTransactionObject implements SavepointManager
+		// 事务强转拿到SavepointManager
 		getSavepointManager().rollbackToSavepoint(savepoint);
 		getSavepointManager().releaseSavepoint(savepoint);
 		setSavepoint(null);

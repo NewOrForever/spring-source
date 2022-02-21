@@ -173,6 +173,7 @@ public abstract class JdbcTransactionObjectSupport implements SavepointManager, 
 		ConnectionHolder conHolder = getConnectionHolderForSavepoint();
 		try {
 			conHolder.getConnection().rollback((Savepoint) savepoint);
+			// 已经回滚了，回滚标记要设为false
 			conHolder.resetRollbackOnly();
 		}
 		catch (Throwable ex) {

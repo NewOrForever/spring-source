@@ -234,6 +234,7 @@ public abstract class DataSourceUtils {
 	 */
 	public static void resetConnectionAfterTransaction(
 			Connection con, @Nullable Integer previousIsolationLevel, boolean resetReadOnly) {
+		// 重置readonly和隔离级别
 
 		Assert.notNull(con, "No Connection specified");
 		boolean debugEnabled = logger.isDebugEnabled();

@@ -923,9 +923,11 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			boolean unexpectedRollback = unexpected;
 
 			try {
+				// 触发当前线程中注册的所有TransactionSynchronization的beforeCompletion方法
 				triggerBeforeCompletion(status);
 
 				// 比如mysql中的savepoint
+				// savepoint好像是在NEST这个传播机制中设置的
 				if (status.hasSavepoint()) {
 					if (status.isDebug()) {
 						logger.debug("Rolling back transaction to savepoint");
@@ -933,14 +935,18 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					// 回滚到上一个savepoint位置
 					status.rollbackToHeldSavepoint();
 				}
+				// 当前事务是新建的事务，直接回滚
+				// test事务中包了一层新建的a事务（NEW）
 				else if (status.isNewTransaction()) {
 					if (status.isDebug()) {
 						logger.debug("Initiating transaction rollback");
 					}
 					// 如果当前执行的方法是新开了一个事务，那么就直接回滚
+					// 拿txObject中的conn执行rollback方法
 					doRollback(status);
 				}
 				else {
+					// a不开启新事物而是加入到test这个事务中
 					// Participating in larger transaction
 					// 如果当前执行的方法，是公用了一个已存在的事务，而当前执行的方法抛了异常，则要判断整个事务到底要不要回滚，看具体配置
 					if (status.hasTransaction()) {
@@ -951,6 +957,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");
 							}
 							// 直接将rollbackOnly设置到ConnectionHolder中去，表示整个事务的sql都要回滚
+							// 只有一个事务么，回滚肯定就是整个事务回滚啦
 							doSetRollbackOnly(status);
 						}
 						else {
@@ -973,6 +980,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				throw ex;
 			}
 
+			// 触发TransactionSynchronization的afterCompletion方法
 			triggerAfterCompletion(status, TransactionSynchronization.STATUS_ROLLED_BACK);
 
 			// Raise UnexpectedRollbackException if we had a global rollback-only marker
@@ -1096,6 +1104,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	private void cleanupAfterCompletion(DefaultTransactionStatus status) {
 		status.setCompleted();
 		if (status.isNewSynchronization()) {
+			// 清楚当前线程的ThreadLocal数据
 			TransactionSynchronizationManager.clear();
 		}
 		if (status.isNewTransaction()) {
