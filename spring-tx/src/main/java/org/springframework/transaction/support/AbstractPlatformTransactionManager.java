@@ -575,7 +575,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			boolean newSynchronization, boolean debug, @Nullable Object suspendedResources) {
 
 		// 在startTransaction的需要新建一个数据库连接，synchronizations这个TreadLocal中没有值（这个值是在prepareSynchronization方法中的initsynchronization中设置）
-		// true说明真的时新开的一个事务
+		// 第一次开启事务及接下来的传播机制是NEW的事务会是true
 		boolean actualNewSynchronization = newSynchronization &&
 				!TransactionSynchronizationManager.isSynchronizationActive();
 		return new DefaultTransactionStatus(

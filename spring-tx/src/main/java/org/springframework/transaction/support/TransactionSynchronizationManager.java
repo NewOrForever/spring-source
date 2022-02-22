@@ -175,6 +175,7 @@ public abstract class TransactionSynchronizationManager {
 	 * @see ResourceTransactionManager#getResourceFactory()
 	 */
 	public static void bindResource(Object key, Object value) throws IllegalStateException {
+		// key：DataSource, value：ConnectionHolder
 		Object actualKey = TransactionSynchronizationUtils.unwrapResourceIfNecessary(key);
 		Assert.notNull(value, "Value must not be null");
 		Map<Object, Object> map = resources.get();
@@ -267,6 +268,12 @@ public abstract class TransactionSynchronizationManager {
 		if (isSynchronizationActive()) {
 			throw new IllegalStateException("Cannot activate transaction synchronization - already active");
 		}
+		// 线程第一次去开启一个事务时候往synchronizations这个ThreadLocal中添加没有元素的set来active synchronization
+		// 线程第二次又要新开启一个事务的话，得将test事务的资源都挂起，transaction、synchronization
+		// 我是这么理解synchronizations这个ThreadLocal的：
+		// registerSynchronization的时候回去拿到Set列表，Set<TransactionSynchronization> synchs = synchronizations.get();
+		// 然后有个判断：set如果为空的话就是抛错，也就是not active synchronization，也就不能registerSynchronization，程序员就不能监听、
+		// spring事务所处的状态
 		synchronizations.set(new LinkedHashSet<>());
 	}
 
@@ -285,6 +292,8 @@ public abstract class TransactionSynchronizationManager {
 
 		Assert.notNull(synchronization, "TransactionSynchronization must not be null");
 		Set<TransactionSynchronization> synchs = synchronizations.get();
+		// 线程第一次去开启一个事务的时候会active synchronizations
+		// 实际就是向synchronization中添加一个没有元素的set
 		if (synchs == null) {
 			throw new IllegalStateException("Transaction synchronization is not active");
 		}
