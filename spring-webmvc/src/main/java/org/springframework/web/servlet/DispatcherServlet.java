@@ -1052,6 +1052,8 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// 找到最合适的HandlerAdapter
+				// RequestMappingHandlerAdapter implements initializingBean
+				// 好多解析器都是在它初始化的时候执行的
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.  HTTP缓存相关
@@ -1274,7 +1276,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	@Nullable
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
-		// 执行Servlet的init()方法时会去找HandlerMapping @see #initStrategies
+		// 执行Servlet的init()方法时会去找HandlerMapping类型的bean @see #initStrategies
 		// 根据类型匹配找bean -> 没有则会去加载默认的DispatcherServlet.properties中配置好的 -> create原型bean
 		if (this.handlerMappings != null) {
 			/** 拿到所有handlerMappings （容器启动阶段初始化：拿到所有实现了HandlerMapping的Bean）
@@ -1318,6 +1320,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
 		if (this.handlerAdapters != null) {
 			for (HandlerAdapter adapter : this.handlerAdapters) {
+				// 只要找到了匹配HandlerAdapter就会直接返回该adapter，下面的就不用在遍历了
 				if (adapter.supports(handler)) {
 					return adapter;
 				}

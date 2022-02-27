@@ -495,6 +495,9 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 这里我主要考虑的是RequestMappingHandlerMapping
+
+		// 返回HandlerMethod，其实就是请求路径匹配到的Controller中的@RequestMapping的方法
 		Object handler = getHandlerInternal(request);
 		if (handler == null) {
 			handler = getDefaultHandler();
@@ -513,6 +516,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 			initLookupPath(request);
 		}
 
+		// handler封装到HandlerExecutionChain对象中，并找HanlerInterceptor添加到该对象
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
 
 		if (logger.isTraceEnabled()) {

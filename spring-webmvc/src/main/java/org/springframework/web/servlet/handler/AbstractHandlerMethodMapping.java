@@ -386,10 +386,14 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	@Nullable
 	protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
 		// 通过UrlPathHelper对象，用于来解析从们的request中解析出请求映射路径
+		// /request/mapping
+		// 会将值添加到request的属性中，后面会直接拿该值
 		String lookupPath = initLookupPath(request);
 		this.mappingRegistry.acquireReadLock();
 		try {
 			// 通过lookupPath解析最终的handler——HandlerMethod对象
+			// 先从pathLookup（RequestMappingHandlerMapping初始化的时候会去赋值）直接以lookupPath为key获取value
+			// 没有值就会匹配所有的RequestMappingInfo
 			HandlerMethod handlerMethod = lookupHandlerMethod(lookupPath, request);
 			return (handlerMethod != null ? handlerMethod.createWithResolvedBean() : null);
 		}
