@@ -412,6 +412,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			}
 			finally {
 				// transactionInfoHolder.set(this.oldTransactionInfo);
+				// a事务切回test事务
 				cleanupTransactionInfo(txInfo);
 			}
 
@@ -706,8 +707,10 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			}
 
 			// transactionAttribute的实现类为RuleBasedTransactionAttribute，父类为DefaultTransactionAttribute
+			// @Transactional中可以设置哪些异常需要回滚，哪些不需要回滚
 			if (txInfo.transactionAttribute != null && txInfo.transactionAttribute.rollbackOn(ex)) {
 				try {
+					// 回滚
 					txInfo.getTransactionManager().rollback(txInfo.getTransactionStatus());
 				}
 				catch (TransactionSystemException ex2) {

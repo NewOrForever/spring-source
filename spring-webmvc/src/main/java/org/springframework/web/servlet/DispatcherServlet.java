@@ -588,6 +588,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		this.handlerMappings = null;
 
 		// 根据类型（多个）   默认true
+		// 根据类型找bean
 		if (this.detectAllHandlerMappings) {
 			// Find all HandlerMappings in the ApplicationContext, including ancestor contexts.
 			Map<String, HandlerMapping> matchingBeans =
@@ -611,6 +612,8 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// 如果没有配 ， 就去DispatcherServlet.properties拿默认的
 		if (this.handlerMappings == null) {
+			// 从DispatcherServlet.properties中拿到默认的HandlerMapping然后去createBean
+			// 但是为啥要给这些bean设置原型呢？
 			this.handlerMappings = getDefaultStrategies(context, HandlerMapping.class);
 			if (logger.isTraceEnabled()) {
 				logger.trace("No HandlerMappings declared for servlet '" + getServletName() +
@@ -871,14 +874,17 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 		}
 
+		// 拿DispatcherServlet.properties中数据，key是接口类型全名
 		String key = strategyInterface.getName();
 		String value = defaultStrategies.getProperty(key);
 		if (value != null) {
+			// string -> 数组，根据分隔符
 			String[] classNames = StringUtils.commaDelimitedListToStringArray(value);
 			List<T> strategies = new ArrayList<>(classNames.length);
 			for (String className : classNames) {
 				try {
 					Class<?> clazz = ClassUtils.forName(className, DispatcherServlet.class.getClassLoader());
+					// createBean，为啥要设置原型bean？
 					Object strategy = createDefaultStrategy(context, clazz);
 					strategies.add((T) strategy);
 				}
@@ -1032,10 +1038,13 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+				// 文件上传相关
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
 				// 进行映射
+				// DispatcherServlet收到请求调用处理器映射器HandlerMapping。
+				// 处理器映射器根据请求url找到具体的处理器，生成处理器执行链HandlerExecutionChain(包括处理器对象和处理器拦截器)一并返回给DispatcherServlet。
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
 					noHandlerFound(processedRequest, response);
@@ -1061,6 +1070,10 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 
 				// Actually invoke the handler.
+				// 执行HandlerAdapter处理一系列的操作，如：参数封装，数据格式转换，数据验证等操作
+				// 执行处理器Handler(Controller，也叫页面控制器)。
+				// Handler执行完成返回ModelAndView
+				// HandlerAdapter将Handler执行结果ModelAndView返回到DispatcherServlet
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
@@ -1080,6 +1093,10 @@ public class DispatcherServlet extends FrameworkServlet {
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
 			// 渲染视图
+			// DispatcherServlet将ModelAndView传给ViewReslover视图解析器
+			// ViewReslover解析后返回具体View
+			// DispatcherServlet对View进行渲染视图（即将模型数据model填充至视图中）。
+			// DispatcherServlet响应用户。
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -1257,6 +1274,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	@Nullable
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
+		// 执行Servlet的init()方法时会去找HandlerMapping @see #initStrategies
+		// 根据类型匹配找bean -> 没有则会去加载默认的DispatcherServlet.properties中配置好的 -> create原型bean
 		if (this.handlerMappings != null) {
 			/** 拿到所有handlerMappings （容器启动阶段初始化：拿到所有实现了HandlerMapping的Bean）
 			 * @see DispatcherServlet#initHandlerMappings

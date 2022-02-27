@@ -161,6 +161,8 @@ public class DefaultTransactionStatus extends AbstractTransactionStatus {
 	 */
 	@Override
 	public boolean isGlobalRollbackOnly() {
+		// DataSourceTransactionObject implements SmartTransactionObject
+		// if the global transaction itself has been marked rollback-only
 		return ((this.transaction instanceof SmartTransactionObject) &&
 				((SmartTransactionObject) this.transaction).isRollbackOnly());
 	}

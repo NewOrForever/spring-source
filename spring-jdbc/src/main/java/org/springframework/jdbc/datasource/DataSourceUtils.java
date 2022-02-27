@@ -112,6 +112,8 @@ public abstract class DataSourceUtils {
 		}
 		// Else we either got no holder or an empty thread-bound holder here.
 
+		// spring事务中没有创建数据库连接或是挂起了数据库连接，那么就会在执行sql的时候，让
+		// jdbc或者mybatis去创建数据库连接（autoCommit=true），也就是说每个sql单独执行不在一个事务中
 		logger.debug("Fetching JDBC Connection from DataSource");
 		Connection con = fetchConnection(dataSource);
 

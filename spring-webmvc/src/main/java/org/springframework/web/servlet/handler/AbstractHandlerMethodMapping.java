@@ -277,15 +277,20 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 * @see #getMappingForMethod
 	 */
 	protected void detectHandlerMethods(Object handler) {
+		// handler可以理解为实际中的controller，这个方法是在找controller中的
+		// isHandler？有@Controller或@RequestMapping注解的bean
+		// RequestMappingHandlerMapping进来handler是handler的beanName
 		Class<?> handlerType = (handler instanceof String ?
 				obtainApplicationContext().getType((String) handler) : handler.getClass());
 
 		if (handlerType != null) {
 			Class<?> userType = ClassUtils.getUserClass(handlerType);
-			// 循环所有方法
+			// 循环所有方法，找到有@RequestMapping注解的方法添加到Map<method,RequetMappingInfo>
 			Map<Method, T> methods = MethodIntrospector.selectMethods(userType,
 					(MethodIntrospector.MetadataLookup<T>) method -> {
 						try {
+							// 方法上有@RequestMapping注解则将注解的属性封装到RequestMappingInfo对象中
+							// -> 如果handler（controller）类上也有@RequestMapping注解，则会将两个RequestMappingInfo对象的属性合并
 							return getMappingForMethod(method, userType);
 						}
 						catch (Throwable ex) {
@@ -658,11 +663,14 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 		}
 
 		public void register(T mapping, Object handler, Method method) {
+			// mapping：RequestMappingInfo
+
 			this.readWriteLock.writeLock().lock();
 			try {
 				HandlerMethod handlerMethod = createHandlerMethod(handler, method);
 				validateMethodMapping(handlerMethod, mapping);
 
+				// 不需要去解析的路径，精确的路径 /user/add
 				Set<String> directPaths = AbstractHandlerMethodMapping.this.getDirectPaths(mapping);
 				for (String path : directPaths) {
 					this.pathLookup.add(path, mapping);
@@ -670,6 +678,10 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 
 				String name = null;
 				if (getNamingStrategy() != null) {
+					// @RequestMapping设置了name就用设置的
+					// 没设置，则拿简单类型名中的大写字符再拼接#再拼接方法全名
+					// UserController.addUser  -> UC#addUser方法全名
+					// 没测试哈
 					name = getNamingStrategy().getName(handlerMethod, mapping);
 					addMappingName(name, handlerMethod);
 				}

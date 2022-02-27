@@ -40,6 +40,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 
+import org.springframework.cglib.proxy.Enhancer;
 import org.springframework.lang.Nullable;
 
 /**

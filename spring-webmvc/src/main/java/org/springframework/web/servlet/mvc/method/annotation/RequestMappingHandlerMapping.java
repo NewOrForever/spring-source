@@ -272,6 +272,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
 		// 如果方法上面有@RequestMapping：解析出RequestMappingInfo
 		// RequestMappingInfo 是用来在请求的时候做匹对的
+		// 解析方法上的@RequestMapping注解，将它的属性封装到RequestMappingInfo对象中
 		RequestMappingInfo info = createRequestMappingInfo(method);
 		if (info != null) {
 			// 如果方法上面有@RequestMapping，看看类上面是不是有@RequestMapping
@@ -279,6 +280,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 			// 类上面也有@RequestMapping  那就合并
 			// 比如 类：/user  方法：/info 合并为 /user/info
 			if (typeInfo != null) {
+				// 合并 -> new RequestMappingInfo(合并后) -> info
 				info = typeInfo.combine(info);
 			}
 

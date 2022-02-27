@@ -117,6 +117,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 	private int defaultTimeout = TransactionDefinition.TIMEOUT_DEFAULT;
 
+	// 事务管理器的无参构造方法中会设置为true
 	private boolean nestedTransactionAllowed = false;
 
 	private boolean validateExistingTransaction = false;
@@ -345,7 +346,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		// Use defaults if no transaction definition given.
 		TransactionDefinition def = (definition != null ? definition : TransactionDefinition.withDefaults());
 
-		// 得到一个新的DataSourceTransactionObject对象
+		// 得到一个新的DataSourceTransactionObject对象 <- 从resources这个ThreadLocal中拿数据库连接设置到该事务对象
 		// new DataSourceTransactionObject  txObject
 		// 为啥要用Object来接收返回值？@Bean定义了不同的事务管理器的话这里返回的事务对象也是不一样的
 		Object transaction = doGetTransaction();
@@ -359,6 +360,11 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		 *	去startTransaction开启事务创建数据库连接
 		 *	test()方法中使用代理对象执行a()方法这个有@Transactional注解的方法时，a()方法也会进入这个代理逻辑， resources有conn那么txObject是有conn的，下面的判断
 		 *	成立，进入handleExistingTransaction方法逻辑来处理不同的传播机制的情况
+		 */
+		/**
+		 * 当前线程第一次去开启事务，如果传播机制是NEVER、SUPPORTED、NOT_SUPPORTED这几个，那么就会创建一个空事务也不会建立数据库连接但是会active synchronization
+		 * 当前线程第二次去开启REQUIRED、NEW、NEST这几个传播机制的事务，那么此时因为第一次没有开启事务，数据库连接都是空的，那么会去startTransaction新开一个事务创建一个shujuk
+		 * 连接，active synchronization？
 		 */
 		if (isExistingTransaction(transaction)) {
 			// Existing transaction found -> check propagation behavior to find out how to behave.
@@ -399,7 +405,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		}
 		else {
 			// NEVER、SUPPORTED、NOT_SUPPORTED
-			// 其他几种传播机制不会新建一个事务，返回的TransactionStatus对象transaction属性为空
+			// 其他几种传播机制不会新建一个事务，返回的TransactionStatus对象transaction属性为空，但是会去active synchronization
 			// Create "empty" transaction: no actual transaction, but potentially synchronization.
 			if (def.getIsolationLevel() != TransactionDefinition.ISOLATION_DEFAULT && logger.isWarnEnabled()) {
 				logger.warn("Custom isolation level specified but no actual transaction initiated; " +
@@ -629,6 +635,14 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	@Nullable
 	protected final SuspendedResourcesHolder suspend(@Nullable Object transaction) throws TransactionException {
+		/**
+		 * 事务？我的理解就是让多个sql一起提交而不是自动提交，就是设置conn的autoCommit属性为false
+		 * 为啥要挂起？为了满足不同的事务场景把。以test和a为例
+		 * resources清除当前数据库连接，如果a的传播机制是NEW，那么还会去startTranaction去新开启一个事务，那么此时a事务就可以单独提交了，但是
+		 * 如果不是NEW的话a执行sql的时候，在DataSourceUtils.doGetConnection()方法中从resources取数据库连接，没找到那么就会让jdbc或者mybatis
+		 * 来创建一个数据库连接（autoCommit=true），那么每个sql就会单独执行完提交，就不在一个事务中了。
+		 */
+
 		// synchronizations是一个ThreadLocal<Set<TransactionSynchronization>>
 		// 我们可以在任何地方通过TransactionSynchronizationManager给当前线程添加TransactionSynchronization，
 
@@ -691,10 +705,16 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 */
 	protected final void resume(@Nullable Object transaction, @Nullable SuspendedResourcesHolder resourcesHolder)
 			throws TransactionException {
+		// 说白了，恢复的是啥？conn、ThreadLocal
+
+		// 需要挂起事务的传播机制？
+		// a事务comletion -> 恢复被挂起的资源（就恢复resources以及一些ThreadLocal的恢复以及TransactionSynchronization的注册）
 
 		if (resourcesHolder != null) {
+			// 挂起的数据库连接
 			Object suspendedResources = resourcesHolder.suspendedResources;
 			if (suspendedResources != null) {
+				// 恢复后transaction中的ConnectionHolder还是null？ 测试
 				doResume(transaction, suspendedResources);
 			}
 			List<TransactionSynchronization> suspendedSynchronizations = resourcesHolder.suspendedSynchronizations;
@@ -756,6 +776,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	private void doResumeSynchronization(List<TransactionSynchronization> suspendedSynchronizations) {
 		TransactionSynchronizationManager.initSynchronization();
 		for (TransactionSynchronization synchronization : suspendedSynchronizations) {
+			// 先执行resume()再去注册
 			synchronization.resume();
 			TransactionSynchronizationManager.registerSynchronization(synchronization);
 		}
@@ -800,6 +821,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		}
 
 		// 判断此事务在之前是否设置了需要回滚，跟globalRollbackOnParticipationFailure有关
+		// defStatus.isGlobalRollbackOnly()拿的是数据库连接的回滚标记
 		if (!shouldCommitOnGlobalRollbackOnly() && defStatus.isGlobalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Global transaction is marked as rollback-only but transactional code requested commit");
@@ -828,6 +850,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 				prepareForCommit(status);
 				triggerBeforeCommit(status);
 				triggerBeforeCompletion(status);
+				// beforeCompletion这个模板方法有没有执行的标记
 				beforeCompletionInvoked = true;
 
 				if (status.hasSavepoint()) {
@@ -880,6 +903,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 			// Trigger afterCommit callbacks, with an exception thrown there
 			// propagated to callers but the transaction still considered as committed.
+			// TransactionSynchronization.afterCommit()方法中抛错了 -> 异常传递给test，但是当前a事务还是会提交的
 			try {
 				triggerAfterCommit(status);
 			}
@@ -957,7 +981,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");
 							}
 							// 直接将rollbackOnly设置到ConnectionHolder中去，表示整个事务的sql都要回滚
-							// 只有一个事务么，回滚肯定就是整个事务回滚啦
+							// conn.setRollbackOnly
 							doSetRollbackOnly(status);
 						}
 						else {
@@ -1102,9 +1126,12 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	 * @see #doCleanupAfterCompletion
 	 */
 	private void cleanupAfterCompletion(DefaultTransactionStatus status) {
+		// 清a事务的数据：同步器中的ThreadLocal、数据库连接
+		// 恢复test事务的数据：ThreadLocal、数据库连接、注册TransactionSychronization
+
 		status.setCompleted();
 		if (status.isNewSynchronization()) {
-			// 清楚当前线程的ThreadLocal数据
+			// 清除当前线程的ThreadLocal数据
 			TransactionSynchronizationManager.clear();
 		}
 		if (status.isNewTransaction()) {
