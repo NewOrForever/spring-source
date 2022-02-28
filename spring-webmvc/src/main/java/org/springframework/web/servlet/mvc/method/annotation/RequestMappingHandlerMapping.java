@@ -317,7 +317,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	 */
 	@Nullable
 	private RequestMappingInfo createRequestMappingInfo(AnnotatedElement element) {
-		// 获取RequestMapping注解
+		// 获取RequestMapping注解（这个得到的注解对象是代理对象）
 		RequestMapping requestMapping = AnnotatedElementUtils.findMergedAnnotation(element, RequestMapping.class);
 		// 获取请求调解：[可扩展]， 如果有：该条件会在请求时匹对
 		RequestCondition<?> condition = (element instanceof Class ?

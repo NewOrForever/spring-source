@@ -277,7 +277,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 * @see #getMappingForMethod
 	 */
 	protected void detectHandlerMethods(Object handler) {
-		// handler可以理解为实际中的controller，这个方法是在找controller中的
+		// handler可以理解为实际中的controller，这个方法是在找controller中的有@RequestMapping注解的方法（如果Controller上也有则会拼接路径）
 		// isHandler？有@Controller或@RequestMapping注解的bean
 		// RequestMappingHandlerMapping进来handler是handler的beanName
 		Class<?> handlerType = (handler instanceof String ?
@@ -305,7 +305,14 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 				mappingsLogger.debug(formatMappings(userType, methods));
 			}
 			methods.forEach((method, mapping) -> {
+				// 还要遍历一遍，确定可调用的方法（应该是和接口中的方法有关，没测试）
+				// 测的话：考虑Controller实现一个接口，接口方法上添加@RequestMapping注解，看看这里具体怎么实现的
 				Method invocableMethod = AopUtils.selectInvocableMethod(method, userType);
+				// 这里会去赋值（在初始化的时候就将一些映射信息保存起来，实际请求的时候就可以直接去找缓存中的）
+				// pathLookup<strUrlPath, RequestMappingInfo>：精确匹配的存进来
+				// nameLookup<RMC#mapping, HandlerMethod>
+				// registry
+				// 这几个属性是核心，请求进来根据这几个属性就能确定Controller中的方法了
 				registerHandlerMethod(handler, invocableMethod, mapping);
 			});
 		}
@@ -386,7 +393,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	@Nullable
 	protected HandlerMethod getHandlerInternal(HttpServletRequest request) throws Exception {
 		// 通过UrlPathHelper对象，用于来解析从们的request中解析出请求映射路径
-		// /request/mapping
+		// 拿到映射路径：/request/mapping
 		// 会将值添加到request的属性中，后面会直接拿该值
 		String lookupPath = initLookupPath(request);
 		this.mappingRegistry.acquireReadLock();
@@ -439,7 +446,9 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 				//创建MatchComparator的匹配器对象
 				Comparator<Match> comparator = new MatchComparator(getMappingComparator(request));
 
-				/** 根据精准度排序  大概是这样的： ? > * > {} >**   具体可以去看：
+				/**
+				 * 根据映射路径来排序的时候
+				 * 根据精准度排序  大概是这样的： ? > * > {} >**   具体可以去看：
 				 * @see org.springframework.util.AntPathMatcher.AntPatternComparator#compare(java.lang.String, java.lang.String)*/
 				matches.sort(comparator);
 
@@ -482,6 +491,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 
 	private void addMatchingMappings(Collection<T> mappings, List<Match> matches, HttpServletRequest request) {
 		for (T mapping : mappings) {
+			// RequestMappingInfo去匹配request
 			T match = getMatchingMapping(mapping, request);
 			if (match != null) {
 				matches.add(new Match(match, this.mappingRegistry.getRegistrations().get(mapping)));
@@ -608,10 +618,14 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 */
 	class MappingRegistry {
 
+		// RequestMappingInfo - MappingRegistration<RequestMappingInfo>
+		// 所有@RequestMapping注解的方法信息
 		private final Map<T, MappingRegistration<T>> registry = new HashMap<>();
 
+		// 精确匹配的路径  path - RequestMappingInfo
 		private final MultiValueMap<String, T> pathLookup = new LinkedMultiValueMap<>();
 
+		// 所有的@RequestMapping注解的方法，mappingName（ex：RMC#mapping）- HandlerMethod
 		private final Map<String, List<HandlerMethod>> nameLookup = new ConcurrentHashMap<>();
 
 		private final Map<HandlerMethod, CorsConfiguration> corsLookup = new ConcurrentHashMap<>();
@@ -674,7 +688,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 				HandlerMethod handlerMethod = createHandlerMethod(handler, method);
 				validateMethodMapping(handlerMethod, mapping);
 
-				// 不需要去解析的路径，精确的路径 /user/add
+				// 不需要去解析的路径，找精确的路径 /user/add，没有 ?、*、{、}这些
 				Set<String> directPaths = AbstractHandlerMethodMapping.this.getDirectPaths(mapping);
 				for (String path : directPaths) {
 					this.pathLookup.add(path, mapping);
@@ -684,18 +698,20 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 				if (getNamingStrategy() != null) {
 					// @RequestMapping设置了name就用设置的
 					// 没设置，则拿简单类型名中的大写字符再拼接#再拼接方法全名
-					// UserController.addUser  -> UC#addUser方法全名
-					// 没测试哈
+					// UserController.addUser  -> UC#addUser方法名
 					name = getNamingStrategy().getName(handlerMethod, mapping);
+					/** nameLookup赋值：所有RequestMappingInfo*/
 					addMappingName(name, handlerMethod);
 				}
 
+				// 这里应该是跨域相关，没看，后续查看资料了解一下吧
 				CorsConfiguration corsConfig = initCorsConfiguration(handler, method, mapping);
 				if (corsConfig != null) {
 					corsConfig.validateAllowCredentials();
 					this.corsLookup.put(handlerMethod, corsConfig);
 				}
 
+				/** 所有RequestMappingInfo */
 				this.registry.put(mapping,
 						new MappingRegistration<>(mapping, handlerMethod, directPaths, name, corsConfig != null));
 			}

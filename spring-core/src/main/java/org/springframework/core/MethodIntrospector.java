@@ -66,7 +66,7 @@ public final class MethodIntrospector {
 		}
 		//获取class的接口
 		handlerTypes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetType));
-		//循环我们的class集合
+		//循环我们的class集合，也会扫描到接口上有@RequestMapping注解的方法
 		for (Class<?> currentHandlerType : handlerTypes) {
 			final Class<?> targetClass = (specificHandlerType != null ? specificHandlerType : currentHandlerType);
 
