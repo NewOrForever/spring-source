@@ -587,23 +587,29 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			return;
 		}
 
+		// 遍历所有的bean，找到有@ControllerAdvice的注解的bean
 		List<ControllerAdviceBean> adviceBeans = ControllerAdviceBean.findAnnotatedBeans(getApplicationContext());
 
 		List<Object> requestResponseBodyAdviceBeans = new ArrayList<>();
 
+		// 遍历ControllerAdvice
 		for (ControllerAdviceBean adviceBean : adviceBeans) {
 			Class<?> beanType = adviceBean.getBeanType();
 			if (beanType == null) {
 				throw new IllegalStateException("Unresolvable type for ControllerAdviceBean: " + adviceBean);
 			}
+
+			// 找没有@RequestMapping但是有@ModelAttribute注解的method
 			Set<Method> attrMethods = MethodIntrospector.selectMethods(beanType, MODEL_ATTRIBUTE_METHODS);
 			if (!attrMethods.isEmpty()) {
 				this.modelAttributeAdviceCache.put(adviceBean, attrMethods);
 			}
+			// 找有@InitBinder注解的method
 			Set<Method> binderMethods = MethodIntrospector.selectMethods(beanType, INIT_BINDER_METHODS);
 			if (!binderMethods.isEmpty()) {
 				this.initBinderAdviceCache.put(adviceBean, binderMethods);
 			}
+			// ControllerAdvice是否实现RequestBodyAdvice或ResponseBodyAdvice
 			if (RequestBodyAdvice.class.isAssignableFrom(beanType) || ResponseBodyAdvice.class.isAssignableFrom(beanType)) {
 				requestResponseBodyAdviceBeans.add(adviceBean);
 			}
@@ -991,11 +997,13 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		Class<?> handlerType = handlerMethod.getBeanType();
 		Set<Method> methods = this.initBinderCache.get(handlerType);
 		if (methods == null) {
+			// 找当前Controller中有@InitBinder注解的方法并放入缓存
 			methods = MethodIntrospector.selectMethods(handlerType, INIT_BINDER_METHODS);
 			this.initBinderCache.put(handlerType, methods);
 		}
 		List<InvocableHandlerMethod> initBinderMethods = new ArrayList<>();
 		// Global methods first
+		// RequestMappingHandlerAdapter初始化的时候会加载@ControllerAdvice注解的bean的有@InitBinder注解的方法
 		this.initBinderAdviceCache.forEach((controllerAdviceBean, methodSet) -> {
 			if (controllerAdviceBean.isApplicableToBeanType(handlerType)) {
 				Object bean = controllerAdviceBean.resolveBean();

@@ -207,6 +207,7 @@ public class InternalResourceView extends AbstractUrlBasedView {
 		// 防止死循环请求
 		if (this.preventDispatchLoop) {
 			String uri = request.getRequestURI();
+			// 请求路径和方法返回路径一样就进入死循环了嘛
 			if (path.startsWith("/") ? uri.equals(path) : uri.equals(StringUtils.applyRelativePath(uri, path))) {
 				throw new ServletException("Circular view path [" + path + "]: would dispatch back " +
 						"to the current handler URL [" + uri + "] again. Check your ViewResolver setup! " +
