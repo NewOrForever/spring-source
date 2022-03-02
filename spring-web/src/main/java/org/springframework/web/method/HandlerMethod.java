@@ -364,7 +364,7 @@ public class HandlerMethod {
 	 */
 	public HandlerMethod createWithResolvedBean() {
 		Object handler = this.bean;
-		// 一开始该属性
+		// 一开始该属性存的是Controller的beanName, 所以要去拿到bean
 		if (this.bean instanceof String) {
 			Assert.state(this.beanFactory != null, "Cannot resolve bean name without BeanFactory");
 			String beanName = (String) this.bean;

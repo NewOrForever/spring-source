@@ -492,6 +492,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	/**初始化策略,加了s都是多个
 	 * Initialize the strategy objects that this servlet uses.
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
+	 * xml方式：spring-mvc.xml如果使用了这个<mvc:annotation-driven/>，那么MvcNameSpaceHandler就会注册一个
+	 * AnnotationDrivenBeanDefinitionParser解析器，解析的时候会调用registerDefaultComponents方法注册一些默认的HandlerMapping、HandlerAdapte等等
+	 *
 	 */
 	protected void initStrategies(ApplicationContext context) {
 		initMultipartResolver(context);
@@ -1463,6 +1466,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	protected View resolveViewName(String viewName, @Nullable Map<String, Object> model,
 			Locale locale, HttpServletRequest request) throws Exception {
 
+		// 初始化的时候会加载视图解析器
+		// 配置文件配置InternalResourceViewResolver
+		/** @see #initStrategies */
 		if (this.viewResolvers != null) {
 			for (ViewResolver viewResolver : this.viewResolvers) {
 				View view = viewResolver.resolveViewName(viewName, locale);

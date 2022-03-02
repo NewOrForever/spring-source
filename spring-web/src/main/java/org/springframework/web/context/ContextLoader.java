@@ -406,7 +406,7 @@ public class ContextLoader {
 		}
 		// 在容器加载前 可以通过设置初始化参数contextInitializerClasses、globalInitializerClasses 进行扩展
 		customizeContext(sc, wac);
-		// 刷新容器
+		// 刷新容器，执行spring的启动流程
 		wac.refresh();
 	}
 

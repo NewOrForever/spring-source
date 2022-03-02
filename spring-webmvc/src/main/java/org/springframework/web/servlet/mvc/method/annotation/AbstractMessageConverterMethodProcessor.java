@@ -280,6 +280,9 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 				if (genericConverter != null ?
 						((GenericHttpMessageConverter) converter).canWrite(targetType, valueType, selectedMediaType) :
 						converter.canWrite(valueType, selectedMediaType)) {
+					// RequestMappingHandler初始化的时候加载进来advice
+					// 实现ResponseBodyAdvice的ControllerAdvice
+					// 输出前执行beforeBodyWrite方法
 					body = getAdvice().beforeBodyWrite(body, returnType, selectedMediaType,
 							(Class<? extends HttpMessageConverter<?>>) converter.getClass(),
 							inputMessage, outputMessage);

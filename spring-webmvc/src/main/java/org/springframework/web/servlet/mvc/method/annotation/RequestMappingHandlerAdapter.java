@@ -885,6 +885,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			ModelFactory modelFactory = getModelFactory(handlerMethod, binderFactory);
 
 			// 封装handlerMethod，会在调用前解析参数、调用后对返回值进行处理
+			// ServletInvocableHandlerMethod extends HandlerMethod，初始化的时候会创建HandlerMethod实例（handlerMethod中的属性复制过去）
 			ServletInvocableHandlerMethod invocableMethod = createInvocableHandlerMethod(handlerMethod);
 			if (this.argumentResolvers != null) {
 				// 让invocableMethod拥有参数解析能力
