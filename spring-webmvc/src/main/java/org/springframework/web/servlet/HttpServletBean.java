@@ -153,6 +153,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		if (!pvs.isEmpty()) {
 			try {
 				// 将当前的这个 Servlet 类转化为一个 BeanWrapper，从而能够以 Spring 的方法来对 init-param 的值进行注入
+				// this就是DispatcherServlet
 				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
 				ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
 				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment()));

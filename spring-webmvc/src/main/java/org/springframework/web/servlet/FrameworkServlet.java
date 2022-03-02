@@ -527,6 +527,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		long startTime = System.currentTimeMillis();
 
 		try {
+			// 子容器
 			this.webApplicationContext = initWebApplicationContext();
 			// 无实现
 			initFrameworkServlet();
@@ -564,6 +565,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 				WebApplicationContextUtils.getWebApplicationContext(getServletContext());
 		WebApplicationContext wac = null;
 
+		// xml方式this.webApplicationContext是空的
 		if (this.webApplicationContext != null) {
 			// 获得子容器
 			wac = this.webApplicationContext;
@@ -584,7 +586,8 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			wac = findWebApplicationContext();
 		}
 		if (wac == null) {
-			// xml会在这里创建
+			// xml会在这里创建子容器
+			// XmlWebApplicationContext
 			wac = createWebApplicationContext(rootContext);
 		}
 

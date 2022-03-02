@@ -265,6 +265,7 @@ public class ContextLoader {
 					"check whether you have multiple ContextLoader* definitions in your web.xml!");
 		}
 
+		// ServletContext是tomcat提供进来的
 		servletContext.log("Initializing Spring root WebApplicationContext");
 		Log logger = LogFactory.getLog(ContextLoader.class);
 		if (logger.isInfoEnabled()) {
@@ -274,20 +275,27 @@ public class ContextLoader {
 
 		try {
 			// xml会在这里创建
+			// xml方式context属性为空需要去创建
 			if (this.context == null) {
+				// ContextLoader.properties
+				// XmlWebApplicationContext
 				this.context = createWebApplicationContext(servletContext);
 			}
 			if (this.context instanceof ConfigurableWebApplicationContext) {
 				ConfigurableWebApplicationContext cwac = (ConfigurableWebApplicationContext) this.context;
+				// 这个context是否refresh了
 				if (!cwac.isActive()) {
 					// The context has not yet been refreshed -> provide services such as
 					// setting the parent context, setting the application context id, etc
 					if (cwac.getParent() == null) {
 						// The context instance was injected without an explicit parent ->
 						// determine parent for root web application context, if any.
+						// 这里的loadParentContext方法就只返回null
+						// 如果要给该父容器再去添加一个父容器就需要自己继承后重写
 						ApplicationContext parent = loadParentContext(servletContext);
 						cwac.setParent(parent);
 					}
+					// refresh在这里
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
@@ -364,6 +372,7 @@ public class ContextLoader {
 			}
 		}
 		else {
+			// ContextLoader.properties
 			contextClassName = defaultStrategies.getProperty(WebApplicationContext.class.getName());
 			try {
 				return ClassUtils.forName(contextClassName, ContextLoader.class.getClassLoader());
