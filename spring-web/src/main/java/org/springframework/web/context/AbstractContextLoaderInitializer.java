@@ -63,6 +63,7 @@ public abstract class AbstractContextLoaderInitializer implements WebApplication
 			ContextLoaderListener listener = new ContextLoaderListener(rootAppContext);
 			// 设置初始化器
 			listener.setContextInitializers(getRootApplicationContextInitializers());
+			// ContextLoaderListener添加到ServletContext
 			servletContext.addListener(listener);
 		}
 		else {
