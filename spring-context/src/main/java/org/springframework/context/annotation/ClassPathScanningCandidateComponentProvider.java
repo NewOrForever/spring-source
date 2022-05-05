@@ -427,6 +427,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			// 获取basePackage下所有的文件资源（class文件）
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			// class文件路径
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
@@ -441,6 +442,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 						// excludeFilters、includeFilters判断
 						if (isCandidateComponent(metadataReader)) { // @Component-->includeFilters判断
 							// beandefinition
+							// 还没有加载类所以这里只能将classname设置给beanClass属性（怪不得beanClass的类型为Object）
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
 

@@ -197,7 +197,7 @@ final class JdkDynamicAopProxy implements AopProxy, InvocationHandler, Serializa
 
 			Object retVal;
 
-			// 如果ProxyFactory的exposeProxy为true,则将代理对象设置到currentProxy这个ThreadLocal中去
+			// 如果ProxyFactory的exposeProxy为true,则将代理对象设置到currentProxy这个ThreadLocal中去 -> AopContext.getCurrentProxy()
 			// @EnableAspectJAutoProxy导入的类中registerBeanDefinitions时会将注解的exposeProxy属性添加到beandefinition的pvs中
 			// proxyFactory.copyFrom(AnnotationAwareAspectJAutoProxyCreator);
 			if (this.advised.exposeProxy) {

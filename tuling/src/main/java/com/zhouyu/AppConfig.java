@@ -2,9 +2,11 @@ package com.zhouyu;
 
 
 import org.springframework.context.annotation.*;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 
 @ComponentScan("com.zhouyu")
+@EnableTransactionManagement
 public class AppConfig {
 
 //	@Bean

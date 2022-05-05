@@ -161,7 +161,7 @@ class ConstructorResolver {
 		if (constructorToUse == null || argsToUse == null) {
 
 			// Take specified constructors, if any.
-			// 如果没有指定构造方法，那就获取beanClass中的所有构造方法所谓候选者
+			// 如果没有指定构造方法，那就获取beanClass中的所有构造方法作为候选者
 			// 多个构造方法或者一个无参构造方法时chosenCtors是null
 			Constructor<?>[] candidates = chosenCtors;
 			if (candidates == null) {
@@ -259,6 +259,7 @@ class ConstructorResolver {
 
 						/**
 						 * 根据参数类型、参数名找到对应的bean对象
+						 * autowiring
 						 */
 						argsHolder = createArgumentArray(beanName, mbd, resolvedValues, bw, paramTypes, paramNames,
 								getUserDeclaredConstructor(candidate), autowiring, candidates.length == 1);

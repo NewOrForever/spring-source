@@ -69,6 +69,7 @@ public class DefaultAopProxyFactory implements AopProxyFactory, Serializable {
 						"Either an interface or a target is required for proxy creation.");
 			}
 			// addInterface(interface.class) || setProxyClass(jdkProxy)
+			// 往cglib的逻辑也是要判断一下target是不是接口的，所以通常情况下proxyfactory设置了接口的话应该是会走jdk的
 			if (targetClass.isInterface() || Proxy.isProxyClass(targetClass)) {
 				return new JdkDynamicAopProxy(config);
 			}

@@ -641,6 +641,7 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 				}
 			}
 			// 使用@Resource时指定了具体的name，进行占位符填充
+			// @Resource(name = "${xxx}")
 			else if (embeddedValueResolver != null) {
 				resourceName = embeddedValueResolver.resolveStringValue(resourceName);
 			}
@@ -648,11 +649,13 @@ public class CommonAnnotationBeanPostProcessor extends InitDestroyAnnotationBean
 			// @Resource除开可以指定bean，还可以指定type，type默认为Object
 			if (Object.class != resourceType) {
 				// 如果指定了type，则验证一下和field的类型或set方法的第一个参数类型，是否和所指定的resourceType匹配
+				// 不匹配是会报错地
 				checkResourceType(resourceType);
 			}
 			else {
 				// No resource type specified... check field/method.
 				// @Resource的type属性默认是Object
+				// field类型或method第一个参数类型
 				resourceType = getResourceType();
 			}
 			this.name = (resourceName != null ? resourceName : "");

@@ -91,6 +91,7 @@ class ConditionEvaluator {
 		}
 
 		List<Condition> conditions = new ArrayList<>();
+		// @Conditional的值
 		for (String[] conditionClasses : getConditionClasses(metadata)) {
 			for (String conditionClass : conditionClasses) {
 				Condition condition = getCondition(conditionClass, this.context.getClassLoader());
@@ -105,6 +106,7 @@ class ConditionEvaluator {
 			if (condition instanceof ConfigurationCondition) {
 				requiredPhase = ((ConfigurationCondition) condition).getConfigurationPhase();
 			}
+			// 执行Condition的matches方法
 			if ((requiredPhase == null || requiredPhase == phase) && !condition.matches(this.context, metadata)) {
 				return true;
 			}

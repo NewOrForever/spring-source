@@ -342,7 +342,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// TransactionAttributeSource用来解析@Transactional注解
 		// @Bean引入TransactionAttributeSource，在advisor bean的factorymethod中依赖注入
 		TransactionAttributeSource tas = getTransactionAttributeSource();
-		// 获取@Transactional注解中的属性
+		// 获取@Transactional注解中的属性 -> 封装到TransactionAttribute对象中
 		final TransactionAttribute txAttr = (tas != null ? tas.getTransactionAttribute(method, targetClass) : null);
 
 		// 返回Spring容器中类型为TransactionManager的Bean对象
@@ -386,7 +386,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// 不然会抛错哎
 		PlatformTransactionManager ptm = asPlatformTransactionManager(tm);
 
-		// joinpoint的唯一标识，就是当前在执行的方法名字（全名）
+		// joinpoint的唯一标识，就是当前在执行的方法名字（全名） ---> 事务名称
 		final String joinpointIdentification = methodIdentification(method, targetClass, txAttr);
 
 		// CallbackPreferringPlatformTransactionManager表示拥有回调功能的PlatformTransactionManager，也不常用
@@ -508,7 +508,6 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		if (txAttr == null || this.beanFactory == null) {
 			return getTransactionManager();
 		}
-
 		// @Transactional的value属性
 		String qualifier = txAttr.getQualifier();
 		if (StringUtils.hasText(qualifier)) {
@@ -562,6 +561,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		String methodIdentification = methodIdentification(method, targetClass);
 		if (methodIdentification == null) {
 			if (txAttr instanceof DefaultTransactionAttribute) {
+				// 我记得在解析@Transactional注解封装到RuleBasedTransactionAttribute的时候这个赋值了
 				methodIdentification = ((DefaultTransactionAttribute) txAttr).getDescriptor();
 			}
 			if (methodIdentification == null) {
@@ -611,6 +611,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// 事务名称：方法全名
 		if (txAttr != null && txAttr.getName() == null) {
 			txAttr = new DelegatingTransactionAttribute(txAttr) {
+				// 实际就是封装RuleBasedTransactionAttribute并给个name属性
 				@Override
 				public String getName() {
 					return joinpointIdentification;
@@ -622,7 +623,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		TransactionStatus status = null;
 		if (txAttr != null) {
 			if (tm != null) {
-				//
+				// 就理解为创建一个事务 ---> 从事务管理中去获取事务
 				status = tm.getTransaction(txAttr);
 			}
 			else {
@@ -674,6 +675,8 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 		// will be managed correctly even if no transaction was created by this aspect.
 		// 把txInfo设置到ThreadLocal中
 		// TransactionInterceptor extends TransactionAspectSupport
+		// 这个stack管理还是有点意思的,每个TransactionInfo只需要记录一个oldTransactionInfo属性就能把整个的TransactionInfo的执行stack
+		// 给管理起来了
 		txInfo.bindToThread();
 		return txInfo;
 	}
@@ -839,6 +842,7 @@ public abstract class TransactionAspectSupport implements BeanFactoryAware, Init
 			 *  		transactionInfoHolder.set(aTransactionInfo)
 			 *
 			 */
+			// this -> transactioninfo
 			transactionInfoHolder.set(this.oldTransactionInfo);
 		}
 

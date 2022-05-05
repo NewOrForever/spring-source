@@ -163,6 +163,7 @@ public class ConstructorArgumentValues {
 	public ValueHolder getIndexedArgumentValue(int index, @Nullable Class<?> requiredType, @Nullable String requiredName) {
 		Assert.isTrue(index >= 0, "Index must not be negative");
 		ValueHolder valueHolder = this.indexedArgumentValues.get(index);
+		// addIndexedArgumentValue的几个重载方法可以看看 -> 最终都是会new ValueHolder的
 		if (valueHolder != null &&
 				(valueHolder.getType() == null || (requiredType != null &&
 						ClassUtils.matchesTypeName(requiredType, valueHolder.getType()))) &&
@@ -280,6 +281,7 @@ public class ConstructorArgumentValues {
 	public ValueHolder getGenericArgumentValue(@Nullable Class<?> requiredType, @Nullable String requiredName,
 			@Nullable Set<ValueHolder> usedValueHolders) {
 
+		// addGenericArgumentValue这个方法也就会构建一个new ValueHolder对象
 		for (ValueHolder valueHolder : this.genericArgumentValues) {
 			if (usedValueHolders != null && usedValueHolders.contains(valueHolder)) {
 				continue;

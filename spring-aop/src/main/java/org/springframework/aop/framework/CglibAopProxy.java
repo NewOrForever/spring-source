@@ -195,7 +195,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 
 			// 被代理类，代理类的父类
 			enhancer.setSuperclass(proxySuperClass);
-			// 代理类额外要实现的接口
+			// 代理类额外要实现的接口 -> 加了几个spring内置的接口吧
 			enhancer.setInterfaces(AopProxyUtils.completeProxiedInterfaces(this.advised));
 			enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
 			enhancer.setStrategy(new ClassLoaderAwareGeneratorStrategy(classLoader));
@@ -208,6 +208,7 @@ class CglibAopProxy implements AopProxy, Serializable {
 				types[x] = callbacks[x].getClass();
 			}
 			// fixedInterceptorMap only populated at this point, after getCallbacks call above
+			// accept
 			enhancer.setCallbackFilter(new ProxyCallbackFilter(
 					this.advised.getConfigurationOnlyCopy(), this.fixedInterceptorMap, this.fixedInterceptorOffset));
 			enhancer.setCallbackTypes(types);

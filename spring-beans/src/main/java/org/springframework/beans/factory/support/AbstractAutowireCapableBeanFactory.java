@@ -495,6 +495,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
 		// 马上就要实例化Bean了，确保beanClass被加载了，String ---> Class
+		// 刚开始扫描出来的beandefintion的beanclass不是设置的className么，那么在这里就需要将它加载为一个class
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
 			mbdToUse = new RootBeanDefinition(mbd);
@@ -604,6 +605,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 			// 循环依赖-lamda表达式添加到三级缓存
 			// getSingleton中获取三级缓存执行lamda表达式生成代理对象（不需要代理就返回原始对象）放入二级缓存
+			// 这个bean是原始对象 -> 如果需要aop那么二级缓存最后存的是这个bean的代理对象不需要就还是这个bean
+			// B创建完回到A属性注入 -> bean要继续完成一个生命周期填充属性啊啥的，但是注意啊二级缓存的bean和这里的是同一个对象啊指向
+			// 同一个地址啊
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -627,6 +631,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		if (earlySingletonExposure) {
+			// 二级缓存中拿，不管拿的是不是代理对象，指向的那个bean完成了属性注入
 			Object earlySingletonReference = getSingleton(beanName, false);
 			if (earlySingletonReference != null) {
 				// A、B循坏依赖，A有@Async注解，经过初始化后返回的是代理对象
@@ -658,6 +663,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Register bean as disposable.
 		try {
 			// 注册需要销毁的bean
+			// 什么样的bean需要被销毁
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
@@ -1438,10 +1444,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
-		// 实例化之后，属性设置之前
+		// 实例化之后，属性设置之前 - 用的好像不多
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (InstantiationAwareBeanPostProcessor bp : getBeanPostProcessorCache().instantiationAware) {
 				if (!bp.postProcessAfterInstantiation(bw.getWrappedInstance(), beanName)) {
+					// 返回false就直接return了
 					return;
 				}
 			}

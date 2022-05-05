@@ -212,6 +212,8 @@ class ConfigurationClassBeanDefinitionReader {
 
 		// Consider name and any aliases
 		List<String> names = new ArrayList<>(Arrays.asList(bean.getStringArray("name")));
+		// @Bean({"user","user01","user02"})  ---> 拿第一个作为beanName
+		// 没指定的话就是拿的方法名
 		String beanName = (!names.isEmpty() ? names.remove(0) : methodName);
 
 		// Register aliases even when overridden

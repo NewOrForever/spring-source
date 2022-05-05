@@ -139,7 +139,7 @@ class ConfigurationClassEnhancer {
 		// Registering callbacks statically (as opposed to thread-local)
 		// is critical for usage in an OSGi environment (SPR-5932)...
 		// 回调主要用到BeanMethodInterceptor
-		// 在createBeanInstance的时候使用factoryMethod来创建bean的时候会进入到拦截方法去处理
+		// 在createBeanInstance（推断构造方法创建实例）的时候使用factoryMethod来创建bean的时候会进入到拦截方法去处理
 		Enhancer.registerStaticCallbacks(subclass, CALLBACKS);
 		return subclass;
 	}

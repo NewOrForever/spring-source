@@ -130,6 +130,7 @@ public abstract class AopProxyUtils {
 		Class<?>[] specifiedInterfaces = advised.getProxiedInterfaces();
 
 		// 如果被代理对象没有实现接口，则判断被代理类是不是接口，或者被代理类是不是已经经过JDK动态代理之后的类从而获取想对应的接口
+		// 这个逻辑其实应该是对应的createAopProxy方法中cglib逻辑进入的时候 -> 判断能不能用jdk的那段
 		if (specifiedInterfaces.length == 0) {
 			// No user-specified interfaces: check whether target class is an interface.
 			Class<?> targetClass = advised.getTargetClass();

@@ -75,6 +75,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.annotation.MergedAnnotation;
 import org.springframework.core.annotation.MergedAnnotations;
 import org.springframework.core.annotation.MergedAnnotations.SearchStrategy;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.core.log.LogMessage;
 import org.springframework.core.metrics.StartupStep;
 import org.springframework.lang.Nullable;
@@ -551,6 +552,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		if (resolvedBeanNames != null) {
 			return resolvedBeanNames;
 		}
+		// core
 		resolvedBeanNames = doGetBeanNamesForType(ResolvableType.forRawClass(type), includeNonSingletons, true);
 		if (ClassUtils.isCacheSafe(type, getBeanClassLoader())) {
 			cache.put(type, resolvedBeanNames);
@@ -634,11 +636,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			try {
 				// In case of FactoryBean, match object created by FactoryBean.
 				if (isFactoryBean(beanName)) {
+					// xxx -> getObjectType
 					if ((includeNonSingletons || isSingleton(beanName)) && isTypeMatch(beanName, type)) {
 						result.add(beanName);
 						// Match found for this bean: do not match FactoryBean itself anymore.
 						continue;
 					}
+					// &xxx -> factorybean itself
 					// In case of FactoryBean, try to match FactoryBean itself next.
 					beanName = FACTORY_BEAN_PREFIX + beanName;
 				}
@@ -1365,6 +1369,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			}
 
 			// OrderService.Class
+			// 当前注入点的类型
 			Class<?> type = descriptor.getDependencyType();
 			// 获取@Value所指定的值
 			// QualifierAnnotationAutowireCandidateResolver
@@ -1392,12 +1397,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 
-			// 如果descriptor所对应的类型是数组、Map这些，就取descriptor对应的类型所匹配的所有bean方法，不用进一步做筛选了
+			// 如果descriptor所对应的类型是数组、Collection、Map这些，就取descriptor对应的类型所匹配的所有bean方法，不用进一步做筛选了
 			Object multipleBeans = resolveMultipleBeans(descriptor, beanName, autowiredBeanNames, typeConverter);
 			if (multipleBeans != null) {
 				return multipleBeans;
 			}
 
+			// 不是数组、Collection、Map这些类型的话 multipleBeans返回的就是null那就要找到匹配的那一个
 			// 找到所有Bean，key是beanName, value有可能是bean对象，有可能是beanClass
 			// 有些bean还没有创建，去BeanDefinitionMap中去匹配，所以找beanClass
 			Map<String, Object> matchingBeans = findAutowireCandidates(beanName, type, descriptor);
@@ -1414,7 +1420,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 			// 最终筛选出来的只有一个
 			if (matchingBeans.size() > 1) {
-				// 根据类型找到了多个Bean，进一步筛选出某一个, @Primary-->优先级最高--->name
+				// 根据类型找到了多个Bean，进一步筛选出某一个, @Primary-->@Priority优先级最高--->name
 				autowiredBeanName = determineAutowireCandidate(matchingBeans, descriptor);
 				if (autowiredBeanName == null) {
 					if (isRequired(descriptor) || !indicatesMultipleBeans(type)) {
@@ -1551,6 +1557,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 		else if (Map.class == type) {
 			ResolvableType mapType = descriptor.getResolvableType().asMap();
+			// Map的第一个参数不就是key么
 			Class<?> keyType = mapType.resolveGeneric(0);
 			// 如果Map的key不是String
 			if (String.class != keyType) {
@@ -1642,6 +1649,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		Map<String, Object> result = CollectionUtils.newLinkedHashMap(candidateNames.length);
 
 		// 根据类型从resolvableDependencies中匹配Bean，resolvableDependencies中存放的是类型：Bean对象，比如BeanFactory.class:BeanFactory对象，在Spring启动时设置
+		// BeanFactory
+		// ResourceLoader
+		// ApplicationEventPublisher
+		// ApplicationContext
 		// 好像是在fresh的prepareFactory方法中设置的
 		for (Map.Entry<Class<?>, Object> classObjectEntry : this.resolvableDependencies.entrySet()) {
 			Class<?> autowiringType = classObjectEntry.getKey();

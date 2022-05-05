@@ -243,6 +243,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		// 在merged扩展点就将注入点准备好放入缓存中在后面属性注入时候直接就能从缓存中拿到注入点了
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
 		// 返回的metadata与缓存中存的指向同一内存地址，当该metadata属性值变了那么缓存map中存的metadata属性值也就变了
 		// checkedElement赋值，缓存中的metadata的该属性也就赋值了，java的一些基本概念吧
@@ -380,6 +381,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 							// 从上面代码可以得到一个结论，在一个类中，要么只能有一个required为true的构造方法，要么只能有一个或多个required为false的方法
 						}
+						// 没有@Autowired注解
 						else if (candidate.getParameterCount() == 0) {
 							// 记录唯一一个无参的构造方法
 							defaultConstructor = candidate;
@@ -433,7 +435,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 	@Override
 	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) {
-		// 找注入点（所有被@Autowired注解了的Field或Method）
+		// 找注入点（所有被@Autowired注解了的Field或Method） - 注入点是在merged扩展点方法那边就已经缓存好了，这里直接拿缓存就行了
 		// metaData.injectElements存的是抽象类InjectElement（子类：AutowiredFieldElement、AutowiredMethodElement）
 		// 最后注入时执行的时两个子类的注入方法
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, bean.getClass(), pvs);
@@ -497,6 +499,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 					// 每个注入点都会new一个对象存入InjectionMetadata.InjectedElement
 					metadata = buildAutowiringMetadata(clazz);
 					// 每个bean都会对应的缓存属于自己的metadata
+					// bean:metadata{clazz,elements - filedelements & methodelements   }
 					this.injectionMetadataCache.put(cacheKey, metadata);
 				}
 			}
@@ -512,6 +515,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 		List<InjectionMetadata.InjectedElement> elements = new ArrayList<>();
 		// clazz ---> targetClass
+		// 当换了一个clazz的时候needfresh
 		Class<?> targetClass = clazz;
 
 		do {
@@ -563,6 +567,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 						}
 					}
 					boolean required = determineRequiredStatus(ann);
+					// 方法这里穿了个属性描述器 - set方法、get方法、is方法，field那边传了又没啥用
 					PropertyDescriptor pd = BeanUtils.findPropertyForMethod(bridgedMethod, clazz);
 					currElements.add(new AutowiredMethodElement(method, required, pd));
 				}
@@ -579,6 +584,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 	@Nullable
 	private MergedAnnotation<?> findAutowiredAnnotation(AccessibleObject ao) {
 		MergedAnnotations annotations = MergedAnnotations.from(ao);
+		// 初始化方法@Autowired、@Value、@Inject
 		for (Class<? extends Annotation> type : this.autowiredAnnotationTypes) {
 			MergedAnnotation<?> annotation = annotations.get(type);
 			if (annotation.isPresent()) {
@@ -685,6 +691,7 @@ public class AutowiredAnnotationBeanPostProcessor implements SmartInstantiationA
 
 		@Override
 		protected void inject(Object bean, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
+			// 一个个注入点进来注入数据
 
 			Field field = (Field) this.member;
 			Object value;

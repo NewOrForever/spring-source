@@ -128,6 +128,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 							}
 						}
 						if (containsSingleton(beanName)) {
+							// factorybean xxx进来添加到缓存
 							this.factoryBeanObjectCache.put(beanName, object);
 						}
 					}
@@ -170,6 +171,7 @@ public abstract class FactoryBeanRegistrySupport extends DefaultSingletonBeanReg
 				}
 			}
 			else {
+				// 执行factorybean的getObject()方法
 				object = factory.getObject();
 			}
 		}

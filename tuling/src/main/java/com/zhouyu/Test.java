@@ -2,6 +2,7 @@ package com.zhouyu;
 
 import com.zhouyu.service.AService;
 import com.zhouyu.service.UserService;
+import org.springframework.aop.framework.ProxyFactory;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 
 public class Test {
@@ -11,7 +12,6 @@ public class Test {
 		AnnotationConfigApplicationContext applicationContext = new AnnotationConfigApplicationContext(AppConfig.class);
 		UserService userService = (UserService) applicationContext.getBean("userService");
 		userService.test();
-
 
 
 		// 测试getSingle()这个解决循环依赖核心方法的bug

@@ -292,7 +292,7 @@ public class DefaultLifecycleProcessor implements LifecycleProcessor, BeanFactor
 			boolean isFactoryBean = beanFactory.isFactoryBean(beanNameToRegister);
 			String beanNameToCheck = (isFactoryBean ? BeanFactory.FACTORY_BEAN_PREFIX + beanName : beanName);
 
-			// 如果所定义的Lifecycle的Bean是单例，或则是SmartLifecycle类型的
+			// 如果所定义的Lifecycle的Bean是单例，或者是SmartLifecycle类型的
 			if ((beanFactory.containsSingleton(beanNameToRegister) &&
 					(!isFactoryBean || matchesBeanType(Lifecycle.class, beanNameToCheck, beanFactory))) ||
 					matchesBeanType(SmartLifecycle.class, beanNameToCheck, beanFactory)) {

@@ -342,6 +342,8 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 	@Override
 	public final TransactionStatus getTransaction(@Nullable TransactionDefinition definition)
 			throws TransactionException {
+		// 使用TransactionDefinition来接,为啥? -> 又不是只有PlatformTransactionManager,还有别的事务管理器啊
+		// 当然我这边考虑的是PlatformTransactionManager -> definition的值就是@Transactional注解封装的对象
 
 		// Use defaults if no transaction definition given.
 		TransactionDefinition def = (definition != null ? definition : TransactionDefinition.withDefaults());
@@ -432,7 +434,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		boolean newSynchronization = (getTransactionSynchronization() != SYNCHRONIZATION_NEVER);
 
 		// 开启的这个事务的状态信息：
-		// 事务的定义、用来保存数据库连接的对象、是否是新事务，是否是新的TransactionSynchronization
+		// 事务的定义(@Transaction注解信息)、用来保存数据库连接的对象、是否是新事务，是否是新的TransactionSynchronization
 		DefaultTransactionStatus status = newTransactionStatus(
 				definition, transaction, true, newSynchronization, debugEnabled, suspendedResources);
 
@@ -644,13 +646,13 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 		 */
 
 		// synchronizations是一个ThreadLocal<Set<TransactionSynchronization>>
-		// 我们可以在任何地方通过TransactionSynchronizationManager给当前线程添加TransactionSynchronization，
+		// 我们可以在任何地方通过TransactionSynchronizationManager给当前线程添加TransactionSynchronization
 
 		// 没有开启事务这个判断false
 		// 存在事务 -》 处理传播机制
 		if (TransactionSynchronizationManager.isSynchronizationActive()) {
 			// 调用TransactionSynchronization的suspend方法，并清空和返回当前线程中所有的TransactionSynchronization对象
-			// uspends transaction synchronization first
+			// suspends transaction synchronization first
 			List<TransactionSynchronization> suspendedSynchronizations = doSuspendSynchronization();
 			try {
 				Object suspendedResources = null;
@@ -801,7 +803,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 		DefaultTransactionStatus defStatus = (DefaultTransactionStatus) status;
 
-		// 可以通过TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();来设置
+		// 可以通过TransactionAspectSupport.currentTransactionStatus().setRollbackOnly()来设置
 		// 事务本来是可以要提交的，但是可以强制回滚
 		/**
 		 * 为了给客户端显示一些友好的错误信息，需要捕获异常，但是还是得要回滚的，所以手动设置强制回滚
@@ -822,6 +824,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 		// 判断此事务在之前是否设置了需要回滚，跟globalRollbackOnParticipationFailure有关
 		// defStatus.isGlobalRollbackOnly()拿的是数据库连接的回滚标记
+		// a事务加入到了test事务,a抛错设置了部分失败全局回滚 -> conn设置回滚标记 -> test事务提交拿到这个回滚标记 -> 全局回滚
 		if (!shouldCommitOnGlobalRollbackOnly() && defStatus.isGlobalRollbackOnly()) {
 			if (defStatus.isDebug()) {
 				logger.debug("Global transaction is marked as rollback-only but transactional code requested commit");
@@ -948,6 +951,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 
 			try {
 				// 触发当前线程中注册的所有TransactionSynchronization的beforeCompletion方法
+				// 判断status.isNewSynchronization()
 				triggerBeforeCompletion(status);
 
 				// 比如mysql中的savepoint
@@ -976,6 +980,7 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 					if (status.hasTransaction()) {
 
 						// 如果一个事务中有两个方法，第二个方法抛异常了，那么第二个方法就相当于执行失败需要回滚，如果globalRollbackOnParticipationFailure为true，那么第一个方法在没有抛异常的情况下也要回滚
+						// a事务加入到了test事务,a抛错设置了部分失败全局回滚 -> conn设置回滚标记 -> test事务提交拿到这个回滚标记 -> 全局回滚
 						if (status.isLocalRollbackOnly() || isGlobalRollbackOnParticipationFailure()) {
 							if (status.isDebug()) {
 								logger.debug("Participating transaction failed - marking existing transaction as rollback-only");

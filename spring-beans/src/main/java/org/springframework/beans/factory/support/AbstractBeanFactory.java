@@ -328,6 +328,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// dependsOn表示当前beanName所依赖的，当前Bean创建之前dependsOn所依赖的Bean必须已经创建好了
 					for (String dep : dependsOn) {
 						// beanName是不是被dep依赖了，如果是则出现了循环依赖
+						// 当前bean是A，依赖B ---> 判断B是否依赖A
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
@@ -385,7 +386,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					if (scope == null) {
 						throw new IllegalStateException("No Scope registered for scope name '" + scopeName + "'");
 					}
-					try {  // session.getAttriute(beaName)  setAttri
+					try {  // session.getAttribute(beaName)  setAttribute
 						Object scopedInstance = scope.get(beanName, () -> {
 							beforePrototypeCreation(beanName);
 							try {
@@ -1587,6 +1588,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						() -> doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());
 			}
 			else {
+				// 主要是拿类加载器
+				// 这里还有点分支 ---> 去根据el表达式找
 				return doResolveBeanClass(mbd, typesToMatch);
 			}
 		}
@@ -1606,6 +1609,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	private Class<?> doResolveBeanClass(RootBeanDefinition mbd, Class<?>... typesToMatch)
 			throws ClassNotFoundException {
 
+		// 获取类加载器 ---> 先拿线程的再拿ClassUtils的再拿系统的
 		ClassLoader beanClassLoader = getBeanClassLoader();
 		ClassLoader dynamicLoader = beanClassLoader;
 		boolean freshResolve = false;

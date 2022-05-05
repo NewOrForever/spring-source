@@ -275,6 +275,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
 
 			for (BeanDefinition candidate : candidates) {
+				// 给beandefinition赋值
 				// scope注解
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());

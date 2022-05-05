@@ -124,6 +124,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 
 	@Override
 	public List<Advisor> getAdvisors(MetadataAwareAspectInstanceFactory aspectInstanceFactory) {
+		// 切面类
 		Class<?> aspectClass = aspectInstanceFactory.getAspectMetadata().getAspectClass();
 		String aspectName = aspectInstanceFactory.getAspectMetadata().getAspectName();
 		validate(aspectClass);
@@ -239,7 +240,7 @@ public class ReflectiveAspectJAdvisorFactory extends AbstractAspectJAdvisorFacto
 	private AspectJExpressionPointcut getPointcut(Method candidateAdviceMethod, Class<?> candidateAspectClass) {
 		// 拿到切面中某个方法上的注解信息
 		AspectJAnnotation<?> aspectJAnnotation =
-				AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);
+						AbstractAspectJAdvisorFactory.findAspectJAnnotationOnMethod(candidateAdviceMethod);
 		if (aspectJAnnotation == null) {
 			return null;
 		}

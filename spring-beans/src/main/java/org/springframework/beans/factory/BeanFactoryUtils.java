@@ -262,6 +262,7 @@ public abstract class BeanFactoryUtils {
 	 */
 	public static String[] beanNamesForTypeIncludingAncestors(
 			ListableBeanFactory lbf, Class<?> type, boolean includeNonSingletons, boolean allowEagerInit) {
+		// 依赖注入那边传入进来的includeNonSingletons为true
 
 		Assert.notNull(lbf, "ListableBeanFactory must not be null");
 		// 从本容器中找
@@ -272,6 +273,7 @@ public abstract class BeanFactoryUtils {
 			if (hbf.getParentBeanFactory() instanceof ListableBeanFactory) {
 				String[] parentResult = beanNamesForTypeIncludingAncestors(
 						(ListableBeanFactory) hbf.getParentBeanFactory(), type, includeNonSingletons, allowEagerInit);
+				// 父子容器拿到的进行合并
 				result = mergeNamesWithParent(result, parentResult, hbf);
 			}
 		}

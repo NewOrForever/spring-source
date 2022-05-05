@@ -119,6 +119,7 @@ class DisposableBeanAdapter implements DisposableBean, Runnable, Serializable {
 				}
 			}
 			else {
+				// destroymethod方法有参数的话：参数类型是bool且只有一个参数
 				if (destroyMethod.getParameterCount() > 0) {
 					Class<?>[] paramTypes = destroyMethod.getParameterTypes();
 					if (paramTypes.length > 1) {

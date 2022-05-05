@@ -58,6 +58,7 @@ import org.springframework.context.MessageSourceResolvable;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.PayloadApplicationEvent;
 import org.springframework.context.ResourceLoaderAware;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.event.ApplicationEventMulticaster;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
@@ -666,6 +667,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
 		// 验证有没有设置必须要有的属性，如果设置了但是环境变量中没有该属性则会报错
+		// 设置必须要有的环境变量，如果没有则会报错
+		// 可以-Dggg=test或者弄个properties配置文件
+		// context.getEnvironment().setRequiredProperties("ggg");
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
@@ -724,7 +728,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// 组成一个BeanPostProcessor，用来处理EnvironmentAware、EmbeddedValueResolverAware等回调
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 
-		// 如果一个属性对应的set方法在ignoredDependencyInterfaces接口中被定义了，则该属性不会进行自动注入（是Spring中的自动注入，不是@Autowired）
+		// 如果一个属性对应的set方法在ignoredDependencyInterfaces接口中被定义了，则该属性不会进行自动注入（是Spring中的自动注入 - bytype byname，不是@Autowired）
+		// ignoredDependencyInterfaces
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
@@ -1114,6 +1119,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			try {
 				// Publish shutdown event.
+				// 发布bean销毁的事件
 				publishEvent(new ContextClosedEvent(this));
 			}
 			catch (Throwable ex) {
@@ -1123,6 +1129,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			// Stop all Lifecycle beans, to avoid delays during individual destruction.
 			if (this.lifecycleProcessor != null) {
 				try {
+					// 可以和refresh的那边的start对应
 					this.lifecycleProcessor.onClose();
 				}
 				catch (Throwable ex) {

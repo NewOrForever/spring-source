@@ -543,6 +543,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 			disposableBeanNames = StringUtils.toStringArray(this.disposableBeans.keySet());
 		}
 		for (int i = disposableBeanNames.length - 1; i >= 0; i--) {
+			// do destroy
 			destroySingleton(disposableBeanNames[i]);
 		}
 

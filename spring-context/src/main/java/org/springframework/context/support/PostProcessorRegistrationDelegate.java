@@ -122,7 +122,7 @@ final class PostProcessorRegistrationDelegate {
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			for (String ppName : postProcessorNames) {
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
-					// 先获取实现PriorityOrdered的bean
+					// 先获取实现PriorityOrdered的bean - 我估计主要是为了先执行spring内部定义的BeanDefinitionRegistryPostProcessor
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
 					processedBeans.add(ppName);
 				}
@@ -301,6 +301,7 @@ final class PostProcessorRegistrationDelegate {
 		registerBeanPostProcessors(beanFactory, nonOrderedPostProcessors);
 
 		// Finally, re-register all internal BeanPostProcessors.
+		// 应该是想我们定义的BeanPostProcessor排在前面 ---> bean创建的时候先执行 ---> spring内部的最后执行
 		// MergedBeanDefinitionPostProcessor排在最后
 		sortPostProcessors(internalPostProcessors, beanFactory);
 		registerBeanPostProcessors(beanFactory, internalPostProcessors);
