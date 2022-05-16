@@ -275,6 +275,8 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 		// 解析方法上的@RequestMapping注解，将它的属性封装到RequestMappingInfo对象中
 		RequestMappingInfo info = createRequestMappingInfo(method);
 		if (info != null) {
+			// 如果方法上没有@RequestMapping方法 -> 那么该方法不符合 -> Controller类上的@RequestMapping注解是用来合并用的，如果没有
+			// @RequestMapping的方法，那么是没法路由进来的（no mapping for GET/test）
 			// 如果方法上面有@RequestMapping，看看类上面是不是有@RequestMapping
 			RequestMappingInfo typeInfo = createRequestMappingInfo(handlerType);
 			// 类上面也有@RequestMapping  那就合并
@@ -414,6 +416,7 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	@Override
 	protected void registerHandlerMethod(Object handler, Method method, RequestMappingInfo mapping) {
 		super.registerHandlerMethod(handler, method, mapping);
+		// 如果方法参数有@RequestBody注解，那么ConsumesRequestCondition设置属性
 		updateConsumesCondition(mapping, method);
 	}
 
