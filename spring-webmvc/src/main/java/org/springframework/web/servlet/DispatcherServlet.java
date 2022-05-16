@@ -493,7 +493,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * Initialize the strategy objects that this servlet uses.
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 * xml方式：spring-mvc.xml如果使用了这个<mvc:annotation-driven/>，那么MvcNameSpaceHandler就会注册一个
-	 * AnnotationDrivenBeanDefinitionParser解析器，解析的时候会调用registerDefaultComponents方法注册一些默认的HandlerMapping、HandlerAdapte等等
+	 * AnnotationDrivenBeanDefinitionParser解析器，解析的时候会调用registerDefaultComponents方法注册一些默认的HandlerMapping、HandlerAdapter等等
 	 *
 	 */
 	protected void initStrategies(ApplicationContext context) {
@@ -877,7 +877,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 		}
 
-		// 拿DispatcherServlet.properties中数据，key是接口类型全名
+		// 拿DispatcherServlet.properties中数据，key是接口类型全名（HandlerMapping、HandlerAdapter ...）
 		String key = strategyInterface.getName();
 		String value = defaultStrategies.getProperty(key);
 		if (value != null) {

@@ -591,7 +591,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			wac = createWebApplicationContext(rootContext);
 		}
 
-		//refreshEventReceived 它会在容器加载完设置为true (通过事件onApplicationEvent)
+		// refreshEventReceived 它会在容器加载完设置为true (通过事件onApplicationEvent)
 		// springboot在这初始化组件
 		if (!this.refreshEventReceived) {
 			synchronized (this.onRefreshMonitor) {

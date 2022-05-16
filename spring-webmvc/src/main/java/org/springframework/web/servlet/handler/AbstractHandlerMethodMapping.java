@@ -219,7 +219,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 * @see #handlerMethodsInitialized
 	 */
 	protected void initHandlerMethods() {
-		// 获得所有候选beanName—— 当前容器所有的beanName
+		// 获得所有候选beanName（getBean(Object.class)）—— 当前容器所有的beanName
 		for (String beanName : getCandidateBeanNames()) {
 			if (!beanName.startsWith(SCOPED_TARGET_NAME_PREFIX)) {
 				// *处理候选bean——即解析@RequestMapping和映射路径
@@ -285,7 +285,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 
 		if (handlerType != null) {
 			Class<?> userType = ClassUtils.getUserClass(handlerType);
-			// 循环所有方法，找到有@RequestMapping注解的方法添加到Map<method,RequetMappingInfo>
+			// 循环Controller所有方法，找到有@RequestMapping注解的方法添加到Map<method,RequetMappingInfo>
 			Map<Method, T> methods = MethodIntrospector.selectMethods(userType,
 					(MethodIntrospector.MetadataLookup<T>) method -> {
 						try {
@@ -618,7 +618,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 */
 	class MappingRegistry {
 
-		// RequestMappingInfo - MappingRegistration<RequestMappingInfo>
+		// Map<RequestMappingInfo, MappingRegistration<RequestMappingInfo>>
 		// 所有@RequestMapping注解的方法信息
 		private final Map<T, MappingRegistration<T>> registry = new HashMap<>();
 
@@ -683,6 +683,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 		public void register(T mapping, Object handler, Method method) {
 			// mapping：RequestMappingInfo
 
+			// writelock
 			this.readWriteLock.writeLock().lock();
 			try {
 				HandlerMethod handlerMethod = createHandlerMethod(handler, method);
@@ -698,7 +699,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 				if (getNamingStrategy() != null) {
 					// @RequestMapping设置了name就用设置的
 					// 没设置，则拿简单类型名中的大写字符再拼接#再拼接方法全名
-					// UserController.addUser  -> UC#addUser方法名
+					// UserController.addUser  -> UC#addUser
 					name = getNamingStrategy().getName(handlerMethod, mapping);
 					/** nameLookup赋值：所有RequestMappingInfo*/
 					addMappingName(name, handlerMethod);

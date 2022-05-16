@@ -148,7 +148,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	@Override
 	public final void init() throws ServletException {
 
-		// 解析 init-param 并封装只 pvs 中(xml)
+		// 解析 init-param 并封装到 pvs 中(xml)
 		PropertyValues pvs = new ServletConfigPropertyValues(getServletConfig(), this.requiredProperties);
 		if (!pvs.isEmpty()) {
 			try {

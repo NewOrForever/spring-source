@@ -67,6 +67,7 @@ public class HandlerMethod {
 	/** Logger that is available to subclasses. */
 	protected static final Log logger = LogFactory.getLog(HandlerMethod.class);
 
+	// beanname or bean instance
 	private final Object bean;
 
 	@Nullable
@@ -75,8 +76,10 @@ public class HandlerMethod {
 	@Nullable
 	private final MessageSource messageSource;
 
+	// Controller（handler）type
 	private final Class<?> beanType;
 
+	// mapping method
 	private final Method method;
 
 	private final Method bridgedMethod;
@@ -156,6 +159,7 @@ public class HandlerMethod {
 		this.bean = beanName;
 		this.beanFactory = beanFactory;
 		this.messageSource = messageSource;
+		// Controller(handler) instance
 		Class<?> beanType = beanFactory.getType(beanName);
 		if (beanType == null) {
 			throw new IllegalStateException("Cannot resolve bean type for bean with name '" + beanName + "'");
