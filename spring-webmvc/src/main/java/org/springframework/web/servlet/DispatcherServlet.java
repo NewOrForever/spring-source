@@ -1056,6 +1056,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 				// 找到最合适的HandlerAdapter
 				// RequestMappingHandlerAdapter implements initializingBean
+				// 初始化的时候会去解析@ControllerAdvice、@ResponseBodyAdvice、@RequestBodyAdvice ...
 				// 好多解析器都是在它初始化的时候执行的
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 

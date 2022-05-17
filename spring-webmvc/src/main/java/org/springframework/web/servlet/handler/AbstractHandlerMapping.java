@@ -608,6 +608,13 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		HandlerExecutionChain chain = (handler instanceof HandlerExecutionChain ?
 				(HandlerExecutionChain) handler : new HandlerExecutionChain(handler));
 
+		/**
+		 * @see #interceptors
+		 * @see #setInterceptors
+		 * @see {@link org.springframework.web.servlet.config.annotation.EnableWebMvc}
+		 * 配置类要实现 {@link org.springframework.web.servlet.config.annotation.WebMvcConfigurer}
+		 * xml方式加载拦截器进来的没看懂 ---> 有需要需要debug下
+		 */
 		for (HandlerInterceptor interceptor : this.adaptedInterceptors) {
 			if (interceptor instanceof MappedInterceptor) {
 				MappedInterceptor mappedInterceptor = (MappedInterceptor) interceptor;
