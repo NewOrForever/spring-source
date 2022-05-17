@@ -278,6 +278,7 @@ public class PatternsRequestCondition extends AbstractRequestCondition<PatternsR
 	@Nullable
 	public PatternsRequestCondition getMatchingCondition(HttpServletRequest request) {
 		String lookupPath = UrlPathHelper.getResolvedLookupPath(request);
+		// matches的排序使用AntPathMatcher
 		List<String> matches = getMatchingPatterns(lookupPath);
 		return !matches.isEmpty() ? new PatternsRequestCondition(new LinkedHashSet<>(matches), this) : null;
 	}

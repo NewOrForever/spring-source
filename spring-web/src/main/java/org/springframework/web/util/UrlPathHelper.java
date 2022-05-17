@@ -210,6 +210,7 @@ public class UrlPathHelper {
 	 * @since 5.3
 	 */
 	public static String getResolvedLookupPath(ServletRequest request) {
+		// 前面已经setAttribute过了
 		String lookupPath = (String) request.getAttribute(PATH_ATTRIBUTE);
 		Assert.notNull(lookupPath, "Expected lookupPath in request attribute \"" + PATH_ATTRIBUTE + "\".");
 		return lookupPath;
@@ -246,7 +247,7 @@ public class UrlPathHelper {
 	 * @see #getPathWithinApplication
 	 */
 	public String getLookupPathForRequest(HttpServletRequest request) {
-		String pathWithinApp = getPathWithinApplication(request);
+		String pathWithinApp = getPathWithinApplication(request);						// /request/mapping
 		// Always use full path within current servlet context?
 		if (this.alwaysUseFullPath || skipServletPathDetermination(request)) {
 			return pathWithinApp;
@@ -303,12 +304,13 @@ public class UrlPathHelper {
 	 * @see #getLookupPathForRequest
 	 */
 	protected String getPathWithinServletMapping(HttpServletRequest request, String pathWithinApp) {
-		String servletPath = getServletPath(request);
-		String sanitizedPathWithinApp = getSanitizedPath(pathWithinApp);
+		String servletPath = getServletPath(request);														// /* ---> /request/mapping
+		String sanitizedPathWithinApp = getSanitizedPath(pathWithinApp);					// /request/mapping
 		String path;
 
 		// If the app container sanitized the servletPath, check against the sanitized version
 		if (servletPath.contains(sanitizedPathWithinApp)) {
+			// sevlet mapping：/request/*  ---> servletPaht就是 /mapping这里进不来走else
 			path = getRemainingPath(sanitizedPathWithinApp, servletPath, false);
 		}
 		else {
@@ -350,9 +352,9 @@ public class UrlPathHelper {
 	 * @see #getLookupPathForRequest
 	 */
 	public String getPathWithinApplication(HttpServletRequest request) {
-		String contextPath = getContextPath(request);
-		String requestUri = getRequestUri(request);
-		String path = getRemainingPath(requestUri, contextPath, true);
+		String contextPath = getContextPath(request); 													// ""
+		String requestUri = getRequestUri(request);															// /request/mapping
+		String path = getRemainingPath(requestUri, contextPath, true);		// uri减掉contextPath：/request/mapping
 		if (path != null) {
 			// Normal case: URI contains context path.
 			return (StringUtils.hasText(path) ? path : "/");

@@ -380,6 +380,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 			return null;
 		}
 		//请求中的params 指定request中必须包含某些参数值是，才让该方法处理。
+		// @RequestMapping(param = {"myparam=myvalue"})
 		ParamsRequestCondition params = this.paramsCondition.getMatchingCondition(request);
 		if (params == null) {
 			return null;
@@ -410,6 +411,13 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		//中的patternsCondition 就会有二个,那么根据request解析出最合适的
 		PatternsRequestCondition patterns = null;
 		if (this.patternsCondition != null) {
+			/**
+			 * 同一个RequestMappingInfo有多个patterns进行排序
+			 * 根据映射路径来排序的时候
+			 * 根据精准度排序  大概是这样的： ? > * > {} >**   具体可以去看：
+			 * @see org.springframework.util.AntPathMatcher.AntPatternComparator#compare(java.lang.String, java.lang.String)
+			 *  AntPathMatcher类上的注释可以看下 - 对于理解这个还是挺有用处的
+			 * */
 			patterns = this.patternsCondition.getMatchingCondition(request);
 			if (patterns == null) {
 				return null;

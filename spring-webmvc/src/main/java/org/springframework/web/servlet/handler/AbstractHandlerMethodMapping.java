@@ -420,12 +420,16 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 	 */
 	@Nullable
 	protected HandlerMethod lookupHandlerMethod(String lookupPath, HttpServletRequest request) throws Exception {
+		/**
+		 * 说白了就是拿请求路径来找最匹配的HandlerMethod
+		 */
+
 		List<Match> matches = new ArrayList<>();
 		// 根据uri从mappingRegistry.pathLookup获取 RequestMappingInfo
-		// pathLookup<path,RequestMappingInfo>会在初始化阶段解析好
+		// pathLookup<path,RequestMappingInfo>会在初始化阶段解析好，看下数据结构(是个多值的Map) extend Map<K, List<V>>
 		List<T> directPathMatches = this.mappingRegistry.getMappingsByDirectPath(lookupPath);
 		if (directPathMatches != null) {
-			// 如果根据path能直接匹配的RequestMappingInfo 则用该mapping进行匹配其他条件(method、header等）
+			// 如果根据path能直接匹配到RequestMappingInfo 则用该mapping进行匹配其他条件(method、header等）
 			addMatchingMappings(directPathMatches, matches, request);
 		}
 		if (matches.isEmpty()) {
@@ -436,20 +440,22 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 			// 选择第一个为最匹配的
 			Match bestMatch = matches.get(0);
 			/**
-			 * 如果匹配到多个
+			 * 如果匹配到多个RequestMappingInfo
 			 @RequestMapping(value="/mappin?")
 			 @RequestMapping(value="/mappin*")
 			 @RequestMapping(value="/{xxxx}")
 			 @RequestMapping(value="/**")
 			 */
 			if (matches.size() > 1) {
-				//创建MatchComparator的匹配器对象
+				//创建MatchComparator的比较器对象
 				Comparator<Match> comparator = new MatchComparator(getMappingComparator(request));
 
 				/**
 				 * 根据映射路径来排序的时候
 				 * 根据精准度排序  大概是这样的： ? > * > {} >**   具体可以去看：
-				 * @see org.springframework.util.AntPathMatcher.AntPatternComparator#compare(java.lang.String, java.lang.String)*/
+				 * @see org.springframework.util.AntPathMatcher.AntPatternComparator#compare(java.lang.String, java.lang.String)
+				 *  AntPathMatcher类上的注释可以看下 - 对于理解这个还是挺有用处的
+				 * */
 				matches.sort(comparator);
 
 				// 排完序后拿到优先级最高的
@@ -480,6 +486,7 @@ public abstract class AbstractHandlerMethodMapping<T> extends AbstractHandlerMap
 			}
 			//把最匹配的设置到request中
 			request.setAttribute(BEST_MATCHING_HANDLER_ATTRIBUTE, bestMatch.getHandlerMethod());
+			// request域中添加一些属性呗
 			handleMatch(bestMatch.mapping, lookupPath, request);
 			//返回最匹配的
 			return bestMatch.getHandlerMethod();
