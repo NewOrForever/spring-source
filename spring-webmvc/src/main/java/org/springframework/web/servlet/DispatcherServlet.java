@@ -1056,7 +1056,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 				// 找到最合适的HandlerAdapter
 				// RequestMappingHandlerAdapter implements initializingBean
-				// 初始化的时候会去解析@ControllerAdvice、@ResponseBodyAdvice、@RequestBodyAdvice ...
+				// bean初始化的时候会去解析@ControllerAdvice、@ResponseBodyAdvice、@RequestBodyAdvice ...
 				// 好多解析器都是在它初始化的时候执行的
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
@@ -1077,7 +1077,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 				// Actually invoke the handler.
 				// 执行HandlerAdapter处理一系列的操作，如：参数封装，数据格式转换，数据验证等操作
-				// 执行处理器Handler(Controller，也叫页面控制器)。
+				// 执行handler（HandlerMethod对象）
 				// Handler执行完成返回ModelAndView
 				// HandlerAdapter将Handler执行结果ModelAndView返回到DispatcherServlet
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
@@ -1087,7 +1087,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				}
 				// 如果mv有  视图没有，给你设置默认视图
 				applyDefaultViewName(processedRequest, mv);
-				//后置拦截器
+				// 后置拦截器
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1397,6 +1397,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	protected void render(ModelAndView mv, HttpServletRequest request, HttpServletResponse response) throws Exception {
 		// Determine locale for request and apply it to the response.
+		// 国际化
 		Locale locale =
 				(this.localeResolver != null ? this.localeResolver.resolveLocale(request) : request.getLocale());
 		response.setLocale(locale);

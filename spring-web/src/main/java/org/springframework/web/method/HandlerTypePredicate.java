@@ -75,16 +75,19 @@ public final class HandlerTypePredicate implements Predicate<Class<?>> {
 			return true;
 		}
 		else if (controllerType != null) {
+			// @ControllerAdvice指定了包
 			for (String basePackage : this.basePackages) {
 				if (controllerType.getName().startsWith(basePackage)) {
 					return true;
 				}
 			}
+			// @ControllerAdvice指定了类型
 			for (Class<?> clazz : this.assignableTypes) {
 				if (ClassUtils.isAssignable(clazz, controllerType)) {
 					return true;
 				}
 			}
+			// @ControllerAdvice指定了注解（某个类需要有这个注解）
 			for (Class<? extends Annotation> annotationClass : this.annotations) {
 				if (AnnotationUtils.findAnnotation(controllerType, annotationClass) != null) {
 					return true;

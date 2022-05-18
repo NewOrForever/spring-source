@@ -181,6 +181,7 @@ public abstract class AbstractMessageConverterMethodArgumentResolver implements 
 						(targetClass != null && converter.canRead(targetClass, contentType))) {
 					if (message.hasBody()) {
 						HttpInputMessage msgToUse =
+								// RequestBodyAdvice -> 增强，解析参数前可执行
 								getAdvice().beforeBodyRead(message, parameter, targetType, converterType);
 						body = (genericConverter != null ? genericConverter.read(targetType, contextClass, msgToUse) :
 								((HttpMessageConverter<T>) converter).read(targetClass, msgToUse));

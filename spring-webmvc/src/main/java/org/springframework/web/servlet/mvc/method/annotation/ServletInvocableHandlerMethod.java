@@ -105,7 +105,7 @@ public class ServletInvocableHandlerMethod extends InvocableHandlerMethod {
 
 		/*真正的调用我们的目标对象 很重要 很重要*/
 		Object returnValue = invokeForRequest(webRequest, mavContainer, providedArgs);
-		// 设置相关的返回状态
+		// 设置相关的返回状态（解析@ResponseStatus注解）
 		setResponseStatus(webRequest);
 		// 如果请求处理完成，则设置requestHandled属性
 		if (returnValue == null) {

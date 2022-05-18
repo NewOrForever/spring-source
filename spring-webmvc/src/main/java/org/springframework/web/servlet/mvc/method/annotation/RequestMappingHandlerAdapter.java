@@ -876,11 +876,11 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		// 把我们的请求req resp包装成 ServletWebRequest
 		ServletWebRequest webRequest = new ServletWebRequest(request, response);
 		try {
-			// 获取容器中全局配置的InitBinder和当前HandlerMethod所对应的Controller中
+			// 获取容器中全局配置（ControllerAdvice）的InitBinder和当前HandlerMethod所对应的Controller中
 			// 配置的InitBinder，用于进行参数的绑定
 			WebDataBinderFactory binderFactory = getDataBinderFactory(handlerMethod);
 
-			// 获取容器中全局配置的ModelAttribute和当前HandlerMethod所对应的Controller 中配置的ModelAttribute，
+			// 获取容器中全局配置（ControllerAdvice）的ModelAttribute和当前HandlerMethod所对应的Controller 中配置的ModelAttribute，
 			// 这些配置的方法将会在目标方法调用之前进行调用
 			ModelFactory modelFactory = getModelFactory(handlerMethod, binderFactory);
 
@@ -889,10 +889,12 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			ServletInvocableHandlerMethod invocableMethod = createInvocableHandlerMethod(handlerMethod);
 			if (this.argumentResolvers != null) {
 				// 让invocableMethod拥有参数解析能力
+				// adapter初始化的时候加载
 				invocableMethod.setHandlerMethodArgumentResolvers(this.argumentResolvers);
 			}
 			if (this.returnValueHandlers != null) {
 				// 让invocableMethod拥有返回值处理能力
+				// adapter初始化的时候加载
 				invocableMethod.setHandlerMethodReturnValueHandlers(this.returnValueHandlers);
 			}
 			// 让invocableMethod拥有InitBinder解析能力
@@ -934,7 +936,9 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 				});
 				invocableMethod = invocableMethod.wrapConcurrentResult(result);
 			}
-			// *对请求参数进行处理，调用目标HandlerMethod，并且将返回值封装为一个ModelAndView对象
+			// 解析请求参数进行处理 -> 调用目标HandlerMethod -> 使用合适的返回值处理器来解析返回值
+			// 方法返回ModelAndView的话使用ModelAndViewMethodReturnValueHandler来处理 -> 给mavContainer赋值
+			// @ResponseBody的话返回值解析为json （mavContainer.setRequestHandled(true)）-> getModelAndView(mavContainer, modelFactory, webRequest)这个就直接返回null了
 			invocableMethod.invokeAndHandle(webRequest, mavContainer);
 			if (asyncManager.isConcurrentHandlingStarted()) {
 				return null;
@@ -942,6 +946,8 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 
 			// 对封装的ModelAndView进行处理，主要是判断当前请求是否进行了重定向，如果进行了重定向，
 			// 还会判断是否需要将FlashAttributes封装到新的请求中
+			// 针对returnValue是ModelAndView，这里会新建一个ModelAndView，将mavContainer的数据赋值进去
+			// returnValue选择json解析的话，这里返回就是null了
 			return getModelAndView(mavContainer, modelFactory, webRequest);
 		}
 		finally {
@@ -964,6 +970,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		Class<?> handlerType = handlerMethod.getBeanType();
 		Set<Method> methods = this.modelAttributeCache.get(handlerType);
 		if (methods == null) {
+			// 方法没有@RequestMapping但有@ModelAttribute
 			methods = MethodIntrospector.selectMethods(handlerType, MODEL_ATTRIBUTE_METHODS);
 			this.modelAttributeCache.put(handlerType, methods);
 		}
@@ -1006,13 +1013,17 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		// Global methods first
 		// RequestMappingHandlerAdapter初始化的时候会加载@ControllerAdvice注解的bean的有@InitBinder注解的方法
 		this.initBinderAdviceCache.forEach((controllerAdviceBean, methodSet) -> {
+			// 该Controller是否需要增强
 			if (controllerAdviceBean.isApplicableToBeanType(handlerType)) {
+				// 拿到ControllerAdvice注解的这个bean对象
 				Object bean = controllerAdviceBean.resolveBean();
 				for (Method method : methodSet) {
+					// global methods 添加initBinderMethods
 					initBinderMethods.add(createInitBinderMethod(bean, method));
 				}
 			}
 		});
+		// then 当前Controller的@InitialBinder注解的方法添加到initBinderMethods
 		for (Method method : methods) {
 			Object bean = handlerMethod.getBean();
 			initBinderMethods.add(createInitBinderMethod(bean, method));
@@ -1049,11 +1060,14 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			ModelFactory modelFactory, NativeWebRequest webRequest) throws Exception {
 
 		modelFactory.updateModel(webRequest, mavContainer);
+		// 像解析@ResponseBody返回值解析器设置了true
 		if (mavContainer.isRequestHandled()) {
 			return null;
 		}
 		ModelMap model = mavContainer.getModel();
+		// 新建一个ModelAndView
 		ModelAndView mav = new ModelAndView(mavContainer.getViewName(), model, mavContainer.getStatus());
+		// 不是viewName
 		if (!mavContainer.isViewReference()) {
 			mav.setView((View) mavContainer.getView());
 		}

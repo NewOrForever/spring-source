@@ -475,6 +475,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 			if (hosts != null) {
 				view.setHosts(hosts);
 			}
+			// 走一遍bean生命周期的初始化（aware回调、初始化前、初始化、初始化后）
 			return applyLifecycleMethods(REDIRECT_URL_PREFIX, view);
 		}
 
@@ -545,7 +546,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	@Override
 	protected View loadView(String viewName, Locale locale) throws Exception {
 		AbstractUrlBasedView view = buildView(viewName);
-		// 进行bean生命周期的初始化前、初始化、初始化后
+		// 进行bean生命周期的aware回调、初始化前、初始化、初始化后
 		View result = applyLifecycleMethods(viewName, view);
 		return (view.checkResource(locale) ? result : null);
 	}
