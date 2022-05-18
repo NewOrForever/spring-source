@@ -168,7 +168,9 @@ public class InternalResourceView extends AbstractUrlBasedView {
 			// Note: The forwarded resource is supposed to determine the content type itself.
 			if (logger.isDebugEnabled()) {
 				logger.debug("Forwarding to [" + getUrl() + "]");
-			} // RequestDispatcher.forward直接转发，就这么简单粗暴
+			}
+			// RequestDispatcher.forward直接转发，就这么简单粗暴
+			// request.getRequestDispatcher("/user/add.jsp").forward(request, response)
 			rd.forward(request, response);
 		}
 	}

@@ -468,6 +468,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 
 		// Check for special "redirect:" prefix.  重定向
 		if (viewName.startsWith(REDIRECT_URL_PREFIX)) {
+			// 去掉前缀
 			String redirectUrl = viewName.substring(REDIRECT_URL_PREFIX.length());
 			RedirectView view = new RedirectView(redirectUrl,
 					isRedirectContextRelative(), isRedirectHttp10Compatible());
@@ -481,12 +482,15 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 
 		// Check for special "forward:" prefix.  转发
 		if (viewName.startsWith(FORWARD_URL_PREFIX)) {
+			// 去掉前缀
 			String forwardUrl = viewName.substring(FORWARD_URL_PREFIX.length());
 			InternalResourceView view = new InternalResourceView(forwardUrl);
 			return applyLifecycleMethods(FORWARD_URL_PREFIX, view);
 		}
 
 		// Else fall back to superclass implementation: calling loadView.
+		// 父子类直接跳来跳去的要注意一下啊
+		// InternalResourceViewResolver extend UrlBasedViewResolver
 		return super.createView(viewName, locale);
 	}
 
@@ -567,6 +571,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 */
 	protected AbstractUrlBasedView buildView(String viewName) throws Exception {
 		AbstractUrlBasedView view = instantiateView();
+		// 重要：拼接前缀后缀
 		view.setUrl(getPrefix() + viewName + getSuffix());
 		view.setAttributesMap(getAttributesMap());
 

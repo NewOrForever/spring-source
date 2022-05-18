@@ -901,7 +901,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			invocableMethod.setDataBinderFactory(binderFactory);
 			// 设置ParameterNameDiscoverer，该对象将按照一定的规则获取当前参数的名称
 			invocableMethod.setParameterNameDiscoverer(this.parameterNameDiscoverer);
-			// ModelAndView处理容器
+			// ModelAndView容器
 			ModelAndViewContainer mavContainer = new ModelAndViewContainer();
 			// 将request的Attribute复制一份到ModelMap
 			mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));

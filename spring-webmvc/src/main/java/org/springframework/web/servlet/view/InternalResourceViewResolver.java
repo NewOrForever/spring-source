@@ -100,6 +100,10 @@ public class InternalResourceViewResolver extends UrlBasedViewResolver {
 
 	@Override
 	protected AbstractUrlBasedView instantiateView() {
+		/**
+		 * @see #InternalResourceViewResolver()
+		 * JstlView.class extend InternalResourceView
+		 */
 		return (getViewClass() == InternalResourceView.class ? new InternalResourceView() :
 				(getViewClass() == JstlView.class ? new JstlView() : super.instantiateView()));
 	}
@@ -111,6 +115,7 @@ public class InternalResourceViewResolver extends UrlBasedViewResolver {
 		if (this.alwaysInclude != null) {
 			view.setAlwaysInclude(this.alwaysInclude);
 		}
+		// 设置为true后请求死循环会抛错
 		view.setPreventDispatchLoop(true);
 		return view;
 	}
