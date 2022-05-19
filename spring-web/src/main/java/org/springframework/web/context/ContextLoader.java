@@ -276,6 +276,7 @@ public class ContextLoader {
 		try {
 			// xml会在这里创建
 			// xml方式context属性为空需要去创建
+			// javaconfig方式在new ContextLoaderListener的时候会去super该父类将ApplicationContext加载进来
 			if (this.context == null) {
 				// ContextLoader.properties
 				// XmlWebApplicationContext
@@ -284,6 +285,7 @@ public class ContextLoader {
 			if (this.context instanceof ConfigurableWebApplicationContext) {
 				ConfigurableWebApplicationContext cwac = (ConfigurableWebApplicationContext) this.context;
 				// 这个context是否refresh了
+				// spring的fresh方法中prepareRefresh()方法设置了true
 				if (!cwac.isActive()) {
 					// The context has not yet been refreshed -> provide services such as
 					// setting the parent context, setting the application context id, etc
@@ -457,6 +459,7 @@ public class ContextLoader {
 		for (ApplicationContextInitializer<ConfigurableApplicationContext> initializer : this.contextInitializers) {
 			initializer.initialize(wac);
 		}
+
 	}
 
 	/**
