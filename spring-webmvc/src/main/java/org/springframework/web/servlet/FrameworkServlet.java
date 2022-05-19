@@ -560,12 +560,13 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 	 * @see #setContextConfigLocation
 	 */
 	protected WebApplicationContext initWebApplicationContext() {
-		// 获得ContextLoaderListener存的父容器
+		// 获得在ContextLoaderListener中refresh后存入ServletContext的父容器
 		WebApplicationContext rootContext =
 				WebApplicationContextUtils.getWebApplicationContext(getServletContext());
 		WebApplicationContext wac = null;
 
 		// xml方式this.webApplicationContext是空的
+		// javaconfig方式：new DispatcherServlet(applicationContext) —> 注入父类
 		if (this.webApplicationContext != null) {
 			// 获得子容器
 			wac = this.webApplicationContext;
@@ -576,7 +577,9 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 					if (cwac.getParent() == null) {
 						cwac.setParent(rootContext);
 					}
-					// 配置并且加载子容器
+					// 配置并且加载子容器 -> refresh
+					// finishRefresh的时候会发布一个ContextRefreshedEvent -> ContextRefreshListener -> refreshEventReceived设为true
+					// -> DispatcherServlet的initStrategies执行加载HandlerMapping、HandlerAdapter ...
 					configureAndRefreshWebApplicationContext(cwac);
 				}
 			}
@@ -586,7 +589,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 			wac = findWebApplicationContext();
 		}
 		if (wac == null) {
-			// xml会在这里创建子容器
+			// xml会在这里创建子容器 -> refresh
 			// XmlWebApplicationContext
 			wac = createWebApplicationContext(rootContext);
 		}

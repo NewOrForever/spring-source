@@ -98,7 +98,7 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 			throw new IllegalStateException("Failed to register servlet with name '" + servletName + "'. " +
 					"Check if there is another servlet registered under the same name.");
 		}
-		// 启动时加载
+		// 启动时加载（tomcat启动的时候就会去加载DispatcherServlet）
 		registration.setLoadOnStartup(1);
 		// 映射
 		registration.addMapping(getServletMappings());

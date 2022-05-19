@@ -400,7 +400,7 @@ public class ContextLoader {
 						ObjectUtils.getDisplayString(sc.getContextPath()));
 			}
 		}
-		// 设置ServletContext到spring上下文
+		// 设置ServletContext到spring容器
 		wac.setServletContext(sc);
 		// 获得servlet容器中的全局参数contextConfigLocation  （xml）
 		String configLocationParam = sc.getInitParameter(CONFIG_LOCATION_PARAM);
