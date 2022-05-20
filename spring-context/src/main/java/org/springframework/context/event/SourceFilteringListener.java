@@ -67,6 +67,12 @@ public class SourceFilteringListener implements GenericApplicationListener {
 	}
 
 
+	/**
+	 * spring mvc子容器启动
+	 * @see {@link org.springframework.web.servlet.FrameworkServlet#configureAndRefreshWebApplicationContext}
+	 * wac.addApplicationListener(new SourceFilteringListener(wac, new ContextRefreshListener()))
+	 * @param event the event to respond to
+	 */
 	@Override
 	public void onApplicationEvent(ApplicationEvent event) {
 		if (event.getSource() == this.source) {

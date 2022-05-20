@@ -688,7 +688,7 @@ public abstract class FrameworkServlet extends HttpServletBean implements Applic
 		wac.setServletContext(getServletContext());
 		wac.setServletConfig(getServletConfig());
 		wac.setNamespace(getNamespace());
-		// 监听器  委托设计模式
+		// 监听器  委托设计模式 ---> 这个监听器很重要啊，后面子容器启动完成发布一个事件就需要该监听器去接收来执行DispatcherServlet的初始化策略
 		wac.addApplicationListener(new SourceFilteringListener(wac, new ContextRefreshListener()));
 
 		// 将init-param设置到Environment中

@@ -110,6 +110,7 @@ public abstract class AbstractApplicationEventMulticaster
 				this.defaultRetriever.applicationListeners.remove(singletonTarget);
 			}
 			this.defaultRetriever.applicationListeners.add(listener);
+			// 没添加一次缓存就会清掉
 			this.retrieverCache.clear();
 		}
 	}
@@ -218,6 +219,7 @@ public abstract class AbstractApplicationEventMulticaster
 			// Proceed like caching wasn't possible for this current local attempt.
 		}
 
+		// 这里 -- defaultRetriever
 		return retrieveApplicationListeners(eventType, sourceType, newRetriever);
 	}
 
@@ -492,7 +494,14 @@ public abstract class AbstractApplicationEventMulticaster
 		public Collection<ApplicationListener<?>> getApplicationListeners() {
 			List<ApplicationListener<?>> allListeners = new ArrayList<>(
 					this.applicationListeners.size() + this.applicationListenerBeans.size());
+			/**
+			 * spring mvc子容器启动会添加一个监听器
+			 * @see {@link org.springframework.web.servlet.FrameworkServlet#configureAndRefreshWebApplicationContext}
+			 * wac.addApplicationListener(new SourceFilteringListener(wac, new ContextRefreshListener()))
+			 * @param event the event to respond to
+			 */
 			allListeners.addAll(this.applicationListeners);
+			// beanName ---> getBean
 			if (!this.applicationListenerBeans.isEmpty()) {
 				BeanFactory beanFactory = getBeanFactory();
 				for (String listenerBeanName : this.applicationListenerBeans) {
