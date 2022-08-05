@@ -12,6 +12,6 @@ import javax.servlet.ServletException;
 public class MainStarter {
 
     public static void main(String[] args) throws Exception {
-        TulingExternalSpringBootApplication.run();
+        TulingSpringBootApplication.run();
     }
 }

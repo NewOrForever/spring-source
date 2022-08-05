@@ -849,14 +849,19 @@ class ConfigurationClassParser {
 
 	private class DeferredImportSelectorGroupingHandler {
 
+		// 分组 : {分组, 该组有哪些DeferredImportSelector}
+		// 没有分组的话这个key就是DeferredImportSelectorHolder
 		private final Map<Object, DeferredImportSelectorGrouping> groupings = new LinkedHashMap<>();
 
 		private final Map<AnnotationMetadata, ConfigurationClass> configurationClasses = new HashMap<>();
 
 		public void register(DeferredImportSelectorHolder deferredImport) {
+			// 分组
+			// DeferredImportSelector的getImportGroup()方法返回非空则使用Group的process和selectImports方法
 			Class<? extends Group> group = deferredImport.getImportSelector().getImportGroup();
 			DeferredImportSelectorGrouping grouping = this.groupings.computeIfAbsent(
 					(group != null ? group : deferredImport),
+					// group是null没有分组的话，这里createGroup创建的是DefaultDeferredImportSelectorGroup
 					key -> new DeferredImportSelectorGrouping(createGroup(group)));
 			grouping.add(deferredImport);
 			this.configurationClasses.put(deferredImport.getConfigurationClass().getMetadata(),
@@ -866,6 +871,10 @@ class ConfigurationClassParser {
 		public void processGroupImports() {
 			for (DeferredImportSelectorGrouping grouping : this.groupings.values()) {
 				Predicate<String> exclusionFilter = grouping.getCandidateFilter();
+				// grouping.getImports()这个方法
+				// 如果DeferredImportSelector的getImportGroup方法返回null的话，执行
+				// DefaultDeferredImportSelectorGroup -> 最终取的是DeferredImportSelector的selectImports方法返回的值
+				// 分组返回不为空，先执行分组的process -> 再执行selectImports
 				grouping.getImports().forEach(entry -> {
 					ConfigurationClass configurationClass = this.configurationClasses.get(entry.getMetadata());
 					try {
